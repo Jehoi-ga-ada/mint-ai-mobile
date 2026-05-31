@@ -13,7 +13,7 @@ import { Screen } from '../../components/Screen';
 import { SegmentedControl } from '../../components/SegmentedControl';
 import { EmptyView, ErrorView, LoadingView } from '../../components/StateView';
 import { resolveDefaultRange, useSettingsStore } from '../../store/settingsStore';
-import { colors, expensePalette, incomePalette, spacing, typography } from '../../theme';
+import { colors, spacing, typography } from '../../theme';
 import type { DateRange, RangePreset } from '../../utils/dateRange';
 
 const IDR = 'IDR';
@@ -70,14 +70,12 @@ interface StatsBodyProps {
 }
 
 function StatsBody({ type, stats }: StatsBodyProps) {
-  const palette = type === 'income' ? incomePalette : expensePalette;
   const segments = buildSegments(
     stats.by_category.map((c) => ({
       key: c.category_id ?? c.category_name,
       label: c.category_name,
       value: c.total,
     })),
-    palette,
   );
 
   return (

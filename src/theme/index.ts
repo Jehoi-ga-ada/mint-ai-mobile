@@ -38,41 +38,17 @@ export const typography = {
   caption: { fontSize: 13, fontWeight: '400' as const },
 } as const;
 
-/** Neutral categorical palette — for value-neutral breakdowns (e.g. portfolio
- * allocation by asset class), where no slice is "good" or "bad". */
+/** High-contrast categorical palette — hues spread around the wheel so adjacent
+ * pie/donut slices are easy to tell apart on the dark theme. */
 export const chartPalette = [
-  '#4D9DE0',
-  '#E1BC29',
-  '#7768AE',
-  '#5BC0BE',
-  '#F4A259',
-  '#C45BAA',
-  '#3DA5D9',
-  '#9BC53D',
-] as const;
-
-/** Money OUT — warm reds/oranges (intuitively "spending"). */
-export const expensePalette = [
-  '#FF6B6B',
-  '#FF8C42',
-  '#F4A259',
-  '#E15554',
-  '#FFB454',
-  '#C45B6B',
-  '#D7263D',
-  '#FF9F1C',
-] as const;
-
-/** Money IN — greens/teals (intuitively "earning"). */
-export const incomePalette = [
-  '#3DDC97',
-  '#2BB673',
-  '#5BC0BE',
-  '#6FCF97',
-  '#26A69A',
-  '#1B9C85',
-  '#8BD450',
-  '#00B8A9',
+  '#3DDC97', // green
+  '#4D9DE0', // blue
+  '#FFB454', // amber
+  '#A78BFA', // violet
+  '#F472B6', // pink
+  '#22D3EE', // cyan
+  '#FB7185', // rose
+  '#9BC53D', // lime
 ] as const;
 
 export function paletteColor(index: number): string {
