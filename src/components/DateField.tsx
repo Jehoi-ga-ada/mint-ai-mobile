@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { colors, radius, spacing, typography } from '../theme';
 import { toISODate } from '../utils/dateRange';
@@ -16,6 +17,7 @@ interface DateFieldProps {
 /** Single-date picker — a field that opens a month calendar. Defaults to the
  * provided value (use today for new entries). Pure RN, no native picker. */
 export function DateField({ label, value, onChange }: DateFieldProps) {
+  const insets = useSafeAreaInsets();
   const [open, setOpen] = useState(false);
   const [view, setView] = useState(() => new Date(value.getFullYear(), value.getMonth(), 1));
 
@@ -57,7 +59,7 @@ export function DateField({ label, value, onChange }: DateFieldProps) {
             onPress={() => setOpen(false)}
             accessibilityLabel="Close"
           />
-          <View style={styles.sheet}>
+          <View style={[styles.sheet, { paddingBottom: insets.bottom + spacing.lg }]}>
             <View style={styles.header}>
               <Pressable
                 onPress={() => setView(new Date(year, month - 1, 1))}

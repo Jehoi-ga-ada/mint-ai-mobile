@@ -8,6 +8,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { colors, radius, spacing, typography } from '../theme';
 import { Icon } from './Icon';
@@ -42,6 +43,7 @@ export function Picker({
   onCreate,
   createLabel = 'Add new',
 }: PickerProps) {
+  const insets = useSafeAreaInsets();
   const [open, setOpen] = useState(false);
   const [adding, setAdding] = useState(false);
   const [name, setName] = useState('');
@@ -100,7 +102,7 @@ export function Picker({
       <Modal visible={open} transparent animationType="slide" onRequestClose={close}>
         <View style={styles.overlay}>
           <Pressable style={styles.backdrop} onPress={close} accessibilityLabel="Close" />
-          <View style={styles.sheet}>
+          <View style={[styles.sheet, { paddingBottom: insets.bottom + spacing.lg }]}>
             <View style={styles.sheetHeader}>
               <Text style={styles.sheetTitle}>{label}</Text>
               <Pressable onPress={close} accessibilityRole="button" accessibilityLabel="Close" hitSlop={8}>
