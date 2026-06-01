@@ -6,7 +6,9 @@ import {
 import { useEffect } from 'react';
 
 import { LoadingView } from '../components/StateView';
+import { OfflineBanner } from '../components/OfflineBanner';
 import { Screen } from '../components/Screen';
+import { useSync } from '../offline/useSync';
 import { useAuthStore } from '../store/authStore';
 import { usePrefsStore } from '../store/prefsStore';
 import { useSettingsStore } from '../store/settingsStore';
@@ -32,6 +34,9 @@ export function RootNavigator() {
   const hydrateSettings = useSettingsStore((s) => s.hydrate);
   const hydratePrefs = usePrefsStore((s) => s.hydrate);
 
+  // Hydrate the offline queue, wire connectivity, and flush queued writes.
+  useSync();
+
   useEffect(() => {
     hydrate();
     hydrateSettings();
@@ -48,7 +53,14 @@ export function RootNavigator() {
 
   return (
     <NavigationContainer theme={navTheme}>
-      {status === 'authed' ? <AppTabs /> : <AuthStack />}
+      {status === 'authed' ? (
+        <>
+          <AppTabs />
+          <OfflineBanner />
+        </>
+      ) : (
+        <AuthStack />
+      )}
     </NavigationContainer>
   );
 }

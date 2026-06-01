@@ -12,7 +12,10 @@ export type IconName =
   | 'plus'
   | 'check'
   | 'close'
-  | 'calendar';
+  | 'calendar'
+  | 'wifiOff'
+  | 'alertCircle'
+  | 'refresh';
 
 interface IconProps {
   name: IconName;
@@ -106,6 +109,31 @@ const GLYPHS: Record<IconName, (s: StrokeProps) => ReactNode> = {
       <Line x1={16} y1={2} x2={16} y2={6} {...s} />
       <Line x1={8} y1={2} x2={8} y2={6} {...s} />
       <Line x1={3} y1={10} x2={21} y2={10} {...s} />
+    </>
+  ),
+  wifiOff: (s) => (
+    <>
+      <Line x1={1} y1={1} x2={23} y2={23} {...s} />
+      <Path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55" {...s} />
+      <Path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39" {...s} />
+      <Path d="M10.71 5.05A16 16 0 0 1 22.58 9" {...s} />
+      <Path d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88" {...s} />
+      <Path d="M8.53 16.11a6 6 0 0 1 6.95 0" {...s} />
+      <Line x1={12} y1={20} x2={12.01} y2={20} {...s} />
+    </>
+  ),
+  alertCircle: (s) => (
+    <>
+      <Circle cx={12} cy={12} r={10} {...s} />
+      <Line x1={12} y1={8} x2={12} y2={12} {...s} />
+      <Line x1={12} y1={16} x2={12.01} y2={16} {...s} />
+    </>
+  ),
+  refresh: (s) => (
+    <>
+      <Polyline points="23 4 23 10 17 10" {...s} />
+      <Polyline points="1 20 1 14 7 14" {...s} />
+      <Path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" {...s} />
     </>
   ),
 };

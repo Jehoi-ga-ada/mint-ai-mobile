@@ -162,6 +162,9 @@ export interface TransactionView {
   category_name: string;
   account_id: string;
   account_name: string;
+  /** Client-only flag: this row is a queued offline change not yet confirmed by
+   * the backend. Never sent by the server. */
+  pending?: boolean;
 }
 
 export interface AccountBalance {
@@ -201,6 +204,8 @@ export interface AddTransaction {
   account_id: string;
   category_id: string;
   note: string | null;
+  /** Idempotency key for offline replay; set by the outbox, de-duped server-side. */
+  client_id?: string;
 }
 
 export interface AddAccount {

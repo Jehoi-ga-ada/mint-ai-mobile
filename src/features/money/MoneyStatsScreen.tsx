@@ -11,8 +11,9 @@ import { Card } from '../../components/Card';
 import { RangeSelector } from '../../components/RangeSelector';
 import { Screen } from '../../components/Screen';
 import { SegmentedControl } from '../../components/SegmentedControl';
-import { EmptyView, ErrorView, LoadingView } from '../../components/StateView';
+import { EmptyView, ErrorView, LoadingView, OfflineView } from '../../components/StateView';
 import { resolveDefaultRange, useSettingsStore } from '../../store/settingsStore';
+import { useNetworkStore } from '../../store/networkStore';
 import { colors, spacing, typography } from '../../theme';
 import type { DateRange, RangePreset } from '../../utils/dateRange';
 
@@ -27,6 +28,7 @@ export function MoneyStatsScreen() {
     resolveDefaultRange(defaultRange, cycleDay, new Date()),
   );
   const stats = useMoneyStats(type, range);
+  const isOnline = useNetworkStore((s) => s.isOnline);
 
   useEffect(() => {
     setRange(resolveDefaultRange(defaultRange, cycleDay, new Date()));
@@ -53,12 +55,14 @@ export function MoneyStatsScreen() {
         onChange={setRange}
       />
 
-      {stats.isLoading ? (
-        <LoadingView />
-      ) : stats.isError || !stats.data ? (
-        <ErrorView message={getErrorMessage(stats.error)} onRetry={stats.refetch} />
-      ) : (
+      {stats.data ? (
         <StatsBody type={type} stats={stats.data} />
+      ) : stats.isError ? (
+        <ErrorView message={getErrorMessage(stats.error)} onRetry={stats.refetch} />
+      ) : !isOnline ? (
+        <OfflineView onRetry={stats.refetch} />
+      ) : (
+        <LoadingView />
       )}
     </Screen>
   );

@@ -6,13 +6,15 @@ import { formatMoney } from '../../api/format';
 import { useTransactions } from '../../api/hooks';
 import type { TransactionView } from '../../api/types';
 import { Card } from '../../components/Card';
+import { Icon } from '../../components/Icon';
 import { Money } from '../../components/Money';
 import { RangeSelector } from '../../components/RangeSelector';
 import { Screen } from '../../components/Screen';
 import { SegmentedControl } from '../../components/SegmentedControl';
-import { EmptyView, ErrorView, LoadingView } from '../../components/StateView';
+import { EmptyView, ErrorView, LoadingView, OfflineView } from '../../components/StateView';
 import type { MoneyStackScreenProps } from '../../navigation/types';
 import { resolveDefaultRange, useSettingsStore } from '../../store/settingsStore';
+import { useNetworkStore } from '../../store/networkStore';
 import { colors, spacing, typography } from '../../theme';
 import type { DateRange, RangePreset } from '../../utils/dateRange';
 import { groupTransactionsByDay } from '../../utils/groupTransactions';
@@ -28,6 +30,7 @@ export function TransactionsScreen({ navigation }: MoneyStackScreenProps<'Transa
     resolveDefaultRange(defaultRange, cycleDay, new Date()),
   );
   const txns = useTransactions(filter === 'all' ? undefined : filter, range);
+  const isOnline = useNetworkStore((s) => s.isOnline);
 
   // Re-apply when the persisted default loads/changes.
   useEffect(() => {
@@ -57,10 +60,12 @@ export function TransactionsScreen({ navigation }: MoneyStackScreenProps<'Transa
         onChange={setRange}
       />
 
-      {txns.isLoading ? (
-        <LoadingView />
-      ) : txns.isError ? (
+      {txns.data.length === 0 && txns.isError ? (
         <ErrorView message={getErrorMessage(txns.error)} onRetry={txns.refetch} />
+      ) : txns.data.length === 0 && !isOnline ? (
+        <OfflineView onRetry={txns.refetch} />
+      ) : txns.data.length === 0 && txns.isLoading ? (
+        <LoadingView />
       ) : (
         <SectionList
           sections={sections}
@@ -116,7 +121,15 @@ function Row({ txn, onPress }: { txn: TransactionView; onPress: () => void }) {
       <Card style={styles.row}>
         <View style={styles.left}>
           <Text style={styles.category}>{txn.category_name}</Text>
-          <Text style={styles.meta}>{txn.account_name}</Text>
+          <View style={styles.metaRow}>
+            <Text style={styles.meta}>{txn.account_name}</Text>
+            {txn.pending && (
+              <View style={styles.pendingTag}>
+                <Icon name="refresh" color={colors.warning} size={11} />
+                <Text style={styles.pendingText}>Pending</Text>
+              </View>
+            )}
+          </View>
           {!!txn.note && <Text style={styles.note}>{txn.note}</Text>}
         </View>
         <Text style={[styles.amount, { color: isIncome ? colors.positive : colors.negative }]}>
@@ -149,7 +162,10 @@ const styles = StyleSheet.create({
   },
   left: { gap: spacing.xs, flex: 1 },
   category: { ...typography.body, color: colors.text },
+  metaRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   meta: { ...typography.caption, color: colors.textMuted },
+  pendingTag: { flexDirection: 'row', alignItems: 'center', gap: 3 },
+  pendingText: { ...typography.caption, color: colors.warning, fontSize: 11 },
   note: { ...typography.caption, color: colors.textMuted, fontStyle: 'italic' },
   amount: { ...typography.heading, marginLeft: spacing.md },
 });

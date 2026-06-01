@@ -2,8 +2,13 @@ import {
   useMutation,
   useQuery,
   useQueryClient,
+  type QueryClient,
 } from '@tanstack/react-query';
+import { useMemo } from 'react';
 
+import { applyOpsToStats, applyOpsToSummary, mergeTransactions } from '../offline/merge';
+import { type OpDisplay, useOutboxStore } from '../offline/outbox';
+import { flushOutbox } from '../offline/sync';
 import { useAuthStore } from '../store/authStore';
 import { toISODate } from '../utils/dateRange';
 import type { DateRange } from '../utils/dateRange';
@@ -229,23 +234,35 @@ export function useDeleteInvestmentTransaction() {
 // -- Money manager (IDR) -----------------------------------------------------
 
 export function useMoneySummary() {
-  return useQuery({
+  const query = useQuery({
     queryKey: queryKeys.moneySummary,
     queryFn: async (): Promise<MoneySummary> =>
       (await api.get<MoneySummary>('/money/summary')).data,
   });
+  const ops = useOutboxStore((s) => s.ops);
+  const data = useMemo(
+    () => (query.data ? applyOpsToSummary(query.data, ops) : query.data),
+    [query.data, ops],
+  );
+  return { ...query, data };
 }
 
 export function useMoneyStats(type: 'income' | 'expense', range?: DateRange) {
-  return useQuery({
+  const query = useQuery({
     queryKey: queryKeys.moneyStats(type, range),
     queryFn: async (): Promise<MoneyStats> =>
       (await api.get<MoneyStats>('/money/stats', { params: { type, ...rangeParams(range) } })).data,
   });
+  const ops = useOutboxStore((s) => s.ops);
+  const data = useMemo(
+    () => (query.data ? applyOpsToStats(query.data, ops, { type, range }) : query.data),
+    [query.data, ops, type, range],
+  );
+  return { ...query, data };
 }
 
 export function useTransactions(type?: 'income' | 'expense', range?: DateRange) {
-  return useQuery({
+  const query = useQuery({
     queryKey: queryKeys.transactions(type, range),
     queryFn: async (): Promise<TransactionView[]> =>
       (
@@ -254,31 +271,72 @@ export function useTransactions(type?: 'income' | 'expense', range?: DateRange) 
         })
       ).data,
   });
+  const ops = useOutboxStore((s) => s.ops);
+  // Overlay queued ops so offline creates/edits/deletes show immediately. Even
+  // with no server data yet (cold offline), pending creates still render.
+  const data = useMemo(
+    () => mergeTransactions(query.data, ops, { type, range }),
+    [query.data, ops, type, range],
+  );
+  return { ...query, data };
 }
 
+/** Resolve display names from the cached reference data so a queued transaction
+ * can render in the ledger without a network round-trip (works fully offline). */
+function resolveNames(qc: QueryClient, payload: AddTransaction): OpDisplay {
+  const accounts = qc.getQueryData<Account[]>(queryKeys.accounts) ?? [];
+  const accountName = accounts.find((a) => a.id === payload.account_id)?.name ?? '—';
+  const categories =
+    qc.getQueryData<Category[]>(queryKeys.categories(payload.type)) ??
+    qc.getQueryData<Category[]>(queryKeys.categories(undefined)) ??
+    [];
+  const categoryName = categories.find((c) => c.id === payload.category_id)?.name ?? '—';
+  return { categoryName, accountName };
+}
+
+/** Money writes are offline-first: they enqueue to the local outbox (so the UI
+ * updates instantly via the overlay) and the sync engine replays them to the
+ * backend when reachable. They resolve as soon as the change is queued. */
 export function useCreateTransaction() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (payload: AddTransaction) =>
-      (await api.post('/transaction/create', payload)).data,
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['money'] }),
+    mutationFn: async (payload: AddTransaction) => {
+      const clientId = useOutboxStore
+        .getState()
+        .enqueueCreate(payload, resolveNames(qc, payload));
+      flushOutbox(qc);
+      return { clientId };
+    },
   });
 }
 
 export function useUpdateTransaction() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, payload }: { id: string; payload: AddTransaction }) =>
-      (await api.put(`/transaction/${id}`, payload)).data,
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['money'] }),
+    mutationFn: async ({
+      id,
+      payload,
+      original,
+    }: {
+      id: string;
+      payload: AddTransaction;
+      original?: TransactionView;
+    }) => {
+      useOutboxStore.getState().enqueueUpdate(id, payload, resolveNames(qc, payload), original);
+      flushOutbox(qc);
+      return { id };
+    },
   });
 }
 
 export function useDeleteTransaction() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (id: string) => (await api.delete(`/transaction/${id}`)).data,
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['money'] }),
+    mutationFn: async ({ id, original }: { id: string; original?: TransactionView }) => {
+      useOutboxStore.getState().enqueueDelete(id, original);
+      flushOutbox(qc);
+      return { id };
+    },
   });
 }
 

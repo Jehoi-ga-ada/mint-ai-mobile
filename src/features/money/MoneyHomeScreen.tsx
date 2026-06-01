@@ -8,26 +8,28 @@ import { Icon } from '../../components/Icon';
 import { Money } from '../../components/Money';
 import { PrivacyToggle } from '../../components/PrivacyToggle';
 import { Screen } from '../../components/Screen';
-import { ErrorView, LoadingView } from '../../components/StateView';
+import { ErrorView, LoadingView, OfflineView } from '../../components/StateView';
 import type { MoneyStackScreenProps } from '../../navigation/types';
+import { useNetworkStore } from '../../store/networkStore';
 import { colors, radius, spacing, typography } from '../../theme';
 
 const IDR = 'IDR';
 
 export function MoneyHomeScreen({ navigation }: MoneyStackScreenProps<'MoneyHome'>) {
   const summary = useMoneySummary();
+  const isOnline = useNetworkStore((s) => s.isOnline);
 
-  if (summary.isLoading) {
+  // No cached data to show: distinguish a real error, being offline, and loading.
+  if (!summary.data) {
     return (
       <Screen>
-        <LoadingView />
-      </Screen>
-    );
-  }
-  if (summary.isError || !summary.data) {
-    return (
-      <Screen>
-        <ErrorView message={getErrorMessage(summary.error)} onRetry={summary.refetch} />
+        {summary.isError ? (
+          <ErrorView message={getErrorMessage(summary.error)} onRetry={summary.refetch} />
+        ) : !isOnline ? (
+          <OfflineView onRetry={summary.refetch} />
+        ) : (
+          <LoadingView />
+        )}
       </Screen>
     );
   }

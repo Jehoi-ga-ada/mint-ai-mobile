@@ -131,7 +131,7 @@ export function AddTransactionScreen({
       onError: (e: unknown) => setError(getErrorMessage(e)),
     };
     if (editing) {
-      updateTxn.mutate({ id: editing.id, payload }, opts);
+      updateTxn.mutate({ id: editing.id, payload, original: editing }, opts);
     } else {
       createTxn.mutate(payload, opts);
     }
@@ -147,10 +147,13 @@ export function AddTransactionScreen({
         text: 'Delete',
         style: 'destructive',
         onPress: () =>
-          deleteTxn.mutate(editing.id, {
-            onSuccess: () => navigation.goBack(),
-            onError: (e) => setError(getErrorMessage(e)),
-          }),
+          deleteTxn.mutate(
+            { id: editing.id, original: editing },
+            {
+              onSuccess: () => navigation.goBack(),
+              onError: (e) => setError(getErrorMessage(e)),
+            },
+          ),
       },
     ]);
   };
