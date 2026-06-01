@@ -8,7 +8,7 @@ import type { HoldingView } from '../../api/types';
 import { ChartLegend } from '../../components/charts/ChartLegend';
 import { DonutChart } from '../../components/charts/DonutChart';
 import { LineChart } from '../../components/charts/LineChart';
-import { buildSegments, recordToInputs } from '../../components/charts/segments';
+import { buildSegments, holdingsToInputs } from '../../components/charts/segments';
 import { Card } from '../../components/Card';
 import { Fab } from '../../components/Fab';
 import { Money } from '../../components/Money';
@@ -22,15 +22,6 @@ import { colors, spacing, typography } from '../../theme';
 import { type DateRange, rangeForPreset } from '../../utils/dateRange';
 
 const USD = 'USD';
-
-const CLASS_LABELS: Record<string, string> = {
-  crypto: 'Crypto',
-  metal: 'Metals',
-  stock: 'Stocks',
-  bond: 'Bonds',
-  forex: 'Forex',
-  cash: 'Cash',
-};
 
 export function PortfolioDetailScreen({
   route,
@@ -66,7 +57,7 @@ export function PortfolioDetailScreen({
 
   const { summary, holdings } = portfolio.data;
   const plColor = Number(summary.unrealized_pl) >= 0 ? colors.positive : colors.negative;
-  const segments = buildSegments(recordToInputs(summary.allocation, CLASS_LABELS));
+  const segments = buildSegments(holdingsToInputs(holdings));
 
   const header = (
     <View style={styles.header}>

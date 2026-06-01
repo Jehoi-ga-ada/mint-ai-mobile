@@ -1,5 +1,5 @@
 import { toNumber } from '../../api/format';
-import type { Numeric } from '../../api/types';
+import type { HoldingView, Numeric } from '../../api/types';
 import { chartPalette } from '../../theme';
 
 export interface Segment {
@@ -38,14 +38,15 @@ export function buildSegments(
   }));
 }
 
-/** Convert an allocation record ({ crypto: 150, ... }) into segment inputs with display labels. */
-export function recordToInputs(
-  record: Record<string, Numeric>,
-  labels: Record<string, string> = {},
-): SegmentInput[] {
-  return Object.entries(record).map(([key, value]) => ({
-    key,
-    label: labels[key] ?? key,
-    value,
-  }));
+/** Convert holdings into per-asset segment inputs (symbol → label, market value → value).
+ * Holdings without a live price contribute no market value and are skipped, so each
+ * slice represents a single asset's USD contribution to the portfolio. */
+export function holdingsToInputs(holdings: HoldingView[]): SegmentInput[] {
+  return holdings
+    .filter((h) => h.price_available && h.market_value != null)
+    .map((h) => ({
+      key: h.asset_id,
+      label: h.symbol,
+      value: h.market_value,
+    }));
 }
