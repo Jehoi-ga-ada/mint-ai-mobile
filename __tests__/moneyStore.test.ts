@@ -80,6 +80,38 @@ describe('moneyStore CRUD', () => {
     expect(useMoneyStore.getState().transactions).toHaveLength(0);
   });
 
+  test('updateAccount renames the account immutably', () => {
+    const before = useMoneyStore.getState().accounts;
+    useMoneyStore.getState().updateAccount('acc-1', { name: 'Wallet' });
+
+    const after = useMoneyStore.getState().accounts;
+    expect(after.find((a) => a.id === 'acc-1')?.name).toBe('Wallet');
+    expect(after).not.toBe(before); // new array, no mutation
+  });
+
+  test('updateAccount refreshes denormalized account_name on existing transactions', () => {
+    const row = useMoneyStore.getState().addTransaction(addPayload());
+    expect(row.account_name).toBe('Cash');
+
+    useMoneyStore.getState().updateAccount('acc-1', { name: 'Wallet' });
+
+    const updated = useMoneyStore.getState().transactions.find((t) => t.id === row.id);
+    expect(updated?.account_name).toBe('Wallet');
+  });
+
+  test('updateAccount leaves other accounts and their transactions untouched', () => {
+    const other = useMoneyStore
+      .getState()
+      .addAccount({ name: 'BCA', type: 'bank', currency: 'IDR', institution: null });
+    const row = useMoneyStore.getState().addTransaction(addPayload({ account_id: other.id }));
+
+    useMoneyStore.getState().updateAccount('acc-1', { name: 'Wallet' });
+
+    expect(useMoneyStore.getState().accounts.find((a) => a.id === other.id)?.name).toBe('BCA');
+    const txn = useMoneyStore.getState().transactions.find((t) => t.id === row.id);
+    expect(txn?.account_name).toBe('BCA');
+  });
+
   test('addAccount and addCategory return the created record with an id', () => {
     const acc = useMoneyStore
       .getState()
