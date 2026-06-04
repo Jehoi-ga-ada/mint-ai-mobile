@@ -23,8 +23,9 @@ export function PrivacyToggle() {
 
 const styles = StyleSheet.create({
   btn: {
-    width: 38,
-    height: 38,
+    // HIG: tappable controls should be at least 44×44pt.
+    width: 44,
+    height: 44,
     borderRadius: radius.pill,
     backgroundColor: colors.surfaceAlt,
     alignItems: 'center',

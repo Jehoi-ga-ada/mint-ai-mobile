@@ -129,14 +129,16 @@ const styles = StyleSheet.create({
   },
   topActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   gear: {
-    width: 38,
-    height: 38,
+    // HIG: 44×44pt minimum tap target.
+    width: 44,
+    height: 44,
     borderRadius: radius.pill,
     backgroundColor: colors.surfaceAlt,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  title: { ...typography.title, color: colors.text },
+  // iOS large-title style for the top-level screen heading.
+  title: { ...typography.display, color: colors.text },
   label: { ...typography.caption, color: colors.textMuted },
   total: { ...typography.display, color: colors.text },
   splitRow: { flexDirection: 'row', gap: spacing.lg, marginTop: spacing.sm },
@@ -148,8 +150,10 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.surfaceAlt,
     paddingVertical: spacing.md,
+    minHeight: 44, // HIG tap target
     borderRadius: radius.md,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   actionPrimary: { backgroundColor: colors.primary },
   actionText: { ...typography.caption, color: colors.text, fontWeight: '600' },

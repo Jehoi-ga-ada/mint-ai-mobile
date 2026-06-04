@@ -1,4 +1,5 @@
-import { useEffect, useLayoutEffect, useMemo, useState } from 'react';
+import { usePreventRemove } from '@react-navigation/native';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Alert, StyleSheet, Text } from 'react-native';
 
 import { getErrorMessage } from '../../api/client';
@@ -46,6 +47,28 @@ export function AddInvestmentScreen({
   const [fee, setFee] = useState(editing ? toNumber(editing.fee).toFixed(2) : '');
   const [note, setNote] = useState(editing?.note ?? '');
   const [error, setError] = useState<string | null>(null);
+
+  // Native swipe-to-dismiss with a discard confirmation when there's input.
+  const bypassDiscard = useRef(false);
+  const isDirty = editing
+    ? quantity !== String(toNumber(editing.quantity)) ||
+      price !== toNumber(editing.price_per_unit).toFixed(2) ||
+      fee !== toNumber(editing.fee).toFixed(2) ||
+      note !== (editing.note ?? '') ||
+      assetId !== editing.asset_id ||
+      type !== editing.type
+    : !!assetId || quantity.trim() !== '' || price.trim() !== '' || note.trim() !== '';
+
+  usePreventRemove(isDirty, ({ data }) => {
+    if (bypassDiscard.current) {
+      navigation.dispatch(data.action);
+      return;
+    }
+    Alert.alert('Discard transaction?', 'Your changes won’t be saved.', [
+      { text: 'Keep editing', style: 'cancel' },
+      { text: 'Discard', style: 'destructive', onPress: () => navigation.dispatch(data.action) },
+    ]);
+  });
 
   const assetPrice = useAssetPrice(assetId);
 
@@ -124,7 +147,10 @@ export function AddInvestmentScreen({
       note: note.trim() || null,
     };
     const opts = {
-      onSuccess: () => navigation.goBack(),
+      onSuccess: () => {
+        bypassDiscard.current = true;
+        navigation.goBack();
+      },
       onError: (e: unknown) => setError(getErrorMessage(e)),
     };
     if (editing) {
@@ -147,7 +173,10 @@ export function AddInvestmentScreen({
           deleteTxn.mutate(
             { id: editing.id, portfolioId },
             {
-              onSuccess: () => navigation.goBack(),
+              onSuccess: () => {
+                bypassDiscard.current = true;
+                navigation.goBack();
+              },
               onError: (e) => setError(getErrorMessage(e)),
             },
           ),

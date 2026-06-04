@@ -55,5 +55,42 @@ export function paletteColor(index: number): string {
   return chartPalette[index % chartPalette.length];
 }
 
-export const theme = { colors, spacing, radius, typography, chartPalette };
+/** Semantic palettes so a chart reads as its meaning at a glance: expense is a
+ * warm red→orange family, income a green→teal family. Hues still vary enough to
+ * tell adjacent slices apart, but the overall tone signals expense vs income. */
+export const expensePalette = [
+  '#FF6B6B', // red
+  '#FB7185', // rose
+  '#FF8E72', // coral
+  '#FFA94D', // orange
+  '#F4708E', // pink-red
+  '#FFB454', // amber
+  '#E2574D', // brick
+  '#D65DB1', // magenta
+] as const;
+
+export const incomePalette = [
+  '#3DDC97', // green
+  '#2BA876', // deep green
+  '#34D399', // emerald
+  '#22D3EE', // cyan
+  '#5EC8B0', // teal
+  '#9BC53D', // lime
+  '#4DD0A0', // mint
+  '#86C232', // olive-green
+] as const;
+
+export function paletteForType(type: 'income' | 'expense'): readonly string[] {
+  return type === 'income' ? incomePalette : expensePalette;
+}
+
+export const theme = {
+  colors,
+  spacing,
+  radius,
+  typography,
+  chartPalette,
+  expensePalette,
+  incomePalette,
+};
 export type Theme = typeof theme;

@@ -14,7 +14,7 @@ import { SegmentedControl } from '../../components/SegmentedControl';
 import { EmptyView, ErrorView, LoadingView, OfflineView } from '../../components/StateView';
 import { resolveDefaultRange, useSettingsStore } from '../../store/settingsStore';
 import { useNetworkStore } from '../../store/networkStore';
-import { colors, spacing, typography } from '../../theme';
+import { colors, paletteForType, spacing, typography } from '../../theme';
 import type { DateRange, RangePreset } from '../../utils/dateRange';
 
 const IDR = 'IDR';
@@ -41,8 +41,8 @@ export function MoneyStatsScreen() {
     <Screen header scroll refreshing={stats.isRefetching} onRefresh={stats.refetch}>
       <SegmentedControl
         options={[
-          { value: 'expense', label: 'Expense' },
-          { value: 'income', label: 'Income' },
+          { value: 'expense', label: 'Expense', activeColor: colors.negative },
+          { value: 'income', label: 'Income', activeColor: colors.positive },
         ]}
         value={type}
         onChange={(v) => setType(v as TxnType)}
@@ -80,6 +80,7 @@ function StatsBody({ type, stats }: StatsBodyProps) {
       label: c.category_name,
       value: c.total,
     })),
+    paletteForType(type),
   );
 
   return (
@@ -92,6 +93,7 @@ function StatsBody({ type, stats }: StatsBodyProps) {
             segments={segments}
             centerValue={formatMoney(stats.total, IDR)}
             centerLabel={type === 'income' ? 'Income' : 'Spent'}
+            centerValueColor={type === 'income' ? colors.positive : colors.negative}
           />
           <Text style={styles.caption}>Share of {type} by category</Text>
           <ChartLegend segments={segments} currency={IDR} />

@@ -1,4 +1,4 @@
-import { Pressable, StyleSheet, Text } from 'react-native';
+import { Platform, Pressable, StyleSheet, Text } from 'react-native';
 
 import { colors, radius, spacing, typography } from '../theme';
 
@@ -6,6 +6,11 @@ interface FabProps {
   label: string;
   onPress: () => void;
 }
+
+// On iOS the native tab bar floats over the content (it reserves no layout
+// space), so the FAB needs extra clearance to sit above it. Android's custom
+// tab bar reserves its own space, so the standard offset is enough.
+const FAB_BOTTOM = Platform.OS === 'ios' ? 104 : spacing.xl;
 
 /** Floating primary action, thumb-reachable at the bottom-right. */
 export function Fab({ label, onPress }: FabProps) {
@@ -26,7 +31,7 @@ const styles = StyleSheet.create({
   fab: {
     position: 'absolute',
     right: spacing.lg,
-    bottom: spacing.xl,
+    bottom: FAB_BOTTOM,
     backgroundColor: colors.primary,
     paddingHorizontal: spacing.lg,
     height: 52,

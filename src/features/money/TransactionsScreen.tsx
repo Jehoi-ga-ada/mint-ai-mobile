@@ -6,6 +6,7 @@ import { formatMoney } from '../../api/format';
 import { useTransactions } from '../../api/hooks';
 import type { TransactionView } from '../../api/types';
 import { Card } from '../../components/Card';
+import { Fab } from '../../components/Fab';
 import { Icon } from '../../components/Icon';
 import { Money } from '../../components/Money';
 import { RangeSelector } from '../../components/RangeSelector';
@@ -42,12 +43,15 @@ export function TransactionsScreen({ navigation }: MoneyStackScreenProps<'Transa
   const sections = groupTransactionsByDay(txns.data ?? [], new Date());
 
   return (
-    <Screen header>
+    <Screen
+      header
+      fab={<Fab label="+ Transaction" onPress={() => navigation.navigate('AddTransaction')} />}
+    >
       <SegmentedControl
         options={[
-          { value: 'all', label: 'All' },
-          { value: 'expense', label: 'Expense' },
-          { value: 'income', label: 'Income' },
+          { value: 'all', label: 'All', activeColor: colors.primary },
+          { value: 'expense', label: 'Expense', activeColor: colors.negative },
+          { value: 'income', label: 'Income', activeColor: colors.positive },
         ]}
         value={filter}
         onChange={(v) => setFilter(v as Filter)}
@@ -142,7 +146,7 @@ function Row({ txn, onPress }: { txn: TransactionView; onPress: () => void }) {
 }
 
 const styles = StyleSheet.create({
-  list: { paddingVertical: spacing.md, flexGrow: 1 },
+  list: { paddingVertical: spacing.md, paddingBottom: 96, flexGrow: 1 },
   dayHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',

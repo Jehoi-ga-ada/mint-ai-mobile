@@ -11,6 +11,8 @@ interface DonutChartProps {
   strokeWidth?: number;
   centerValue?: string;
   centerLabel?: string;
+  /** Tint for the center value (e.g. red for expense, green for income). */
+  centerValueColor?: string;
 }
 
 export function DonutChart({
@@ -19,6 +21,7 @@ export function DonutChart({
   strokeWidth = 26,
   centerValue,
   centerLabel,
+  centerValueColor,
 }: DonutChartProps) {
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
@@ -59,7 +62,11 @@ export function DonutChart({
       </Svg>
       {(centerValue || centerLabel) && (
         <View style={styles.center} pointerEvents="none">
-          {!!centerValue && <Text style={styles.centerValue}>{centerValue}</Text>}
+          {!!centerValue && (
+            <Text style={[styles.centerValue, centerValueColor ? { color: centerValueColor } : null]}>
+              {centerValue}
+            </Text>
+          )}
           {!!centerLabel && <Text style={styles.centerLabel}>{centerLabel}</Text>}
         </View>
       )}

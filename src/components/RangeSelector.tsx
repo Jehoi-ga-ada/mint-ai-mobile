@@ -50,8 +50,10 @@ export function RangeSelector({
   const choosePreset = (p: RangePreset) => {
     setPreset(p);
     if (p === 'custom') {
+      // Don't pop the calendar open — keep it collapsed and apply the existing
+      // custom range. The user opens the calendar deliberately via "Change".
+      setCalendarOpen(false);
       onChange({ start: committedStart, end: committedEnd });
-      openCalendar();
     } else {
       setCalendarOpen(false);
       onChange(rangeForPreset(p, new Date()));
@@ -136,7 +138,7 @@ export function RangeSelector({
 }
 
 const styles = StyleSheet.create({
-  wrapper: { gap: spacing.sm },
+  wrapper: { gap: spacing.sm, marginTop: spacing.sm },
   row: { gap: spacing.sm },
   pill: {
     paddingHorizontal: spacing.md,
