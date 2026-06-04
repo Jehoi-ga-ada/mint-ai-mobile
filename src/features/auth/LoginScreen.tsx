@@ -7,7 +7,7 @@ import { useLogin } from '../../api/hooks';
 import { Button } from '../../components/Button';
 import { Input } from '../../components/Input';
 import { Screen } from '../../components/Screen';
-import type { AuthStackScreenProps } from '../../navigation/types';
+import type { RootStackScreenProps } from '../../navigation/types';
 import { colors, spacing, typography } from '../../theme';
 
 interface LoginForm {
@@ -15,7 +15,7 @@ interface LoginForm {
   password: string;
 }
 
-export function LoginScreen({ navigation }: AuthStackScreenProps<'Login'>) {
+export function LoginScreen({ navigation }: RootStackScreenProps<'Login'>) {
   const { control, handleSubmit } = useForm<LoginForm>({
     defaultValues: { username: '', password: '' },
   });
@@ -24,7 +24,11 @@ export function LoginScreen({ navigation }: AuthStackScreenProps<'Login'>) {
 
   const onSubmit = handleSubmit((values) => {
     setError(null);
-    login.mutate(values, { onError: (e) => setError(getErrorMessage(e)) });
+    login.mutate(values, {
+      // Dismiss the auth modal back to the tabs; the gated feature reveals itself.
+      onSuccess: () => navigation.navigate('Tabs'),
+      onError: (e) => setError(getErrorMessage(e)),
+    });
   });
 
   return (

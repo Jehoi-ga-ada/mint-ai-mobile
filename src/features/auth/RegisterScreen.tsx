@@ -7,7 +7,7 @@ import { useLogin, useRegister } from '../../api/hooks';
 import { Button } from '../../components/Button';
 import { Input } from '../../components/Input';
 import { Screen } from '../../components/Screen';
-import type { AuthStackScreenProps } from '../../navigation/types';
+import type { RootStackScreenProps } from '../../navigation/types';
 import { colors, spacing, typography } from '../../theme';
 
 interface RegisterForm {
@@ -16,7 +16,7 @@ interface RegisterForm {
   password: string;
 }
 
-export function RegisterScreen({ navigation }: AuthStackScreenProps<'Register'>) {
+export function RegisterScreen({ navigation }: RootStackScreenProps<'Register'>) {
   const { control, handleSubmit, getValues } = useForm<RegisterForm>({
     defaultValues: { username: '', email: '', password: '' },
   });
@@ -30,7 +30,10 @@ export function RegisterScreen({ navigation }: AuthStackScreenProps<'Register'>)
       // Backend register returns the user but no token — log in straight after.
       onSuccess: () => {
         const { username, password } = getValues();
-        login.mutate({ username, password });
+        login.mutate(
+          { username, password },
+          { onSuccess: () => navigation.navigate('Tabs') },
+        );
       },
       onError: (e) => setError(getErrorMessage(e)),
     });

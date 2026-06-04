@@ -4,6 +4,7 @@ import { getErrorMessage } from '../../api/client';
 import { formatPct, toNumber } from '../../api/format';
 import { usePortfolios } from '../../api/hooks';
 import type { PortfolioView } from '../../api/types';
+import { AuthGate } from '../../components/AuthGate';
 import { Card } from '../../components/Card';
 import { Money } from '../../components/Money';
 import { PrivacyToggle } from '../../components/PrivacyToggle';
@@ -14,7 +15,17 @@ import { colors, spacing, typography } from '../../theme';
 
 const USD = 'USD';
 
-export function PortfolioListScreen({ navigation }: PortfolioStackScreenProps<'PortfolioList'>) {
+export function PortfolioListScreen(props: PortfolioStackScreenProps<'PortfolioList'>) {
+  // Gate the whole Portfolio domain at its root. The content (and its server
+  // query) only mounts once authed, so guests never fire a doomed request.
+  return (
+    <AuthGate reason="Portfolios track live USD prices on your account, so they need sign-in.">
+      <PortfolioListContent {...props} />
+    </AuthGate>
+  );
+}
+
+function PortfolioListContent({ navigation }: PortfolioStackScreenProps<'PortfolioList'>) {
   const portfolios = usePortfolios();
 
   const total = (portfolios.data ?? []).reduce(
@@ -104,7 +115,7 @@ function PortfolioRow({ portfolio, onPress }: RowProps) {
 const styles = StyleSheet.create({
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
   headerActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  title: { ...typography.title, color: colors.text },
+  title: { ...typography.display, color: colors.text },
   subtitle: { ...typography.caption, color: colors.textMuted, marginTop: spacing.sm },
   total: { ...typography.title, color: colors.text },
   addBtn: {

@@ -3,18 +3,22 @@ import {
   NavigationContainer,
   type Theme,
 } from '@react-navigation/native';
-import { useEffect } from 'react';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { useEffect, useState } from 'react';
+import { View, StyleSheet } from 'react-native';
 
-import { LoadingView } from '../components/StateView';
 import { OfflineBanner } from '../components/OfflineBanner';
-import { Screen } from '../components/Screen';
-import { useSync } from '../offline/useSync';
+import { SplashScreen } from '../components/SplashScreen';
+import { LoginScreen } from '../features/auth/LoginScreen';
+import { RegisterScreen } from '../features/auth/RegisterScreen';
+import { useMoneyStore } from '../money/moneyStore';
+import { useConnectivity } from '../offline/useConnectivity';
 import { useAuthStore } from '../store/authStore';
 import { usePrefsStore } from '../store/prefsStore';
 import { useSettingsStore } from '../store/settingsStore';
 import { colors } from '../theme';
 import { AppTabs } from './AppTabs';
-import { AuthStack } from './AuthStack';
+import type { RootStackParamList } from './types';
 
 const navTheme: Theme = {
   ...DarkTheme,
@@ -28,39 +32,51 @@ const navTheme: Theme = {
   },
 };
 
+const RootStack = createNativeStackNavigator<RootStackParamList>();
+
 export function RootNavigator() {
   const status = useAuthStore((s) => s.status);
-  const hydrate = useAuthStore((s) => s.hydrate);
+  const hydrateAuth = useAuthStore((s) => s.hydrate);
   const hydrateSettings = useSettingsStore((s) => s.hydrate);
   const hydratePrefs = usePrefsStore((s) => s.hydrate);
+  const hydrateMoney = useMoneyStore((s) => s.hydrate);
+  const moneyHydrated = useMoneyStore((s) => s.hydrated);
+  const [splashDone, setSplashDone] = useState(false);
 
-  // Hydrate the offline queue, wire connectivity, and flush queued writes.
-  useSync();
+  // Reflect connectivity into React Query + the network store (Portfolio needs it).
+  useConnectivity();
 
   useEffect(() => {
-    hydrate();
+    hydrateAuth();
     hydrateSettings();
     hydratePrefs();
-  }, [hydrate, hydrateSettings, hydratePrefs]);
+    hydrateMoney();
+  }, [hydrateAuth, hydrateSettings, hydratePrefs, hydrateMoney]);
 
-  if (status === 'loading') {
-    return (
-      <Screen>
-        <LoadingView />
-      </Screen>
-    );
-  }
+  // The app renders immediately under an animated splash; the splash fades out
+  // once auth + the local Money store are hydrated (and after a brief minimum).
+  const ready = status !== 'loading' && moneyHydrated;
 
   return (
-    <NavigationContainer theme={navTheme}>
-      {status === 'authed' ? (
-        <>
-          <AppTabs />
-          <OfflineBanner />
-        </>
-      ) : (
-        <AuthStack />
-      )}
-    </NavigationContainer>
+    <View style={styles.root}>
+      <NavigationContainer theme={navTheme}>
+        <RootStack.Navigator>
+          <RootStack.Screen name="Tabs" component={AppTabs} options={{ headerShown: false }} />
+          {/* Auth is optional and presented over the always-on tabs. */}
+          <RootStack.Group screenOptions={{ presentation: 'modal', headerShown: false }}>
+            <RootStack.Screen name="Login" component={LoginScreen} />
+            <RootStack.Screen name="Register" component={RegisterScreen} />
+          </RootStack.Group>
+        </RootStack.Navigator>
+        <OfflineBanner />
+      </NavigationContainer>
+      {/* Splash overlays everything; sits outside the navigator so it always
+          paints on top regardless of navigator internals. */}
+      {!splashDone && <SplashScreen ready={ready} onFinish={() => setSplashDone(true)} />}
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  root: { flex: 1, backgroundColor: colors.background },
+});

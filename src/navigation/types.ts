@@ -2,7 +2,10 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
 import type { InvestmentTransactionView, TransactionView } from '../api/types';
 
-export type AuthStackParamList = {
+/** Root stack: the tab app is always rendered; auth screens are presented as
+ * modals over it (login is optional, only for Portfolio + Assistant). */
+export type RootStackParamList = {
+  Tabs: undefined;
   Login: undefined;
   Register: undefined;
 };
@@ -31,10 +34,13 @@ export type PortfolioStackParamList = {
 export type AppTabParamList = {
   Money: undefined;
   Portfolio: undefined;
+  Assistant: undefined;
 };
 
-export type AuthStackScreenProps<T extends keyof AuthStackParamList> =
-  NativeStackScreenProps<AuthStackParamList, T>;
+export type RootStackScreenProps<T extends keyof RootStackParamList> = NativeStackScreenProps<
+  RootStackParamList,
+  T
+>;
 
 export type MoneyStackScreenProps<T extends keyof MoneyStackParamList> =
   NativeStackScreenProps<MoneyStackParamList, T>;
