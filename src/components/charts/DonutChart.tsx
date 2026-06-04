@@ -5,6 +5,10 @@ import { colors, typography } from '../../theme';
 import { donutArcs } from './geometry';
 import type { Segment } from './segments';
 
+/** Circumference units of background showing between slices so adjacent
+ * colors stay distinguishable. */
+const SLICE_SEPARATOR = 3;
+
 interface DonutChartProps {
   segments: Segment[];
   size?: number;
@@ -29,6 +33,7 @@ export function DonutChart({
   const arcs = donutArcs(
     segments.map((s) => s.value),
     circumference,
+    SLICE_SEPARATOR,
   );
 
   return (

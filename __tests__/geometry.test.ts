@@ -15,6 +15,29 @@ describe('donutArcs', () => {
     const arcs = donutArcs([0, 0], 100);
     expect(arcs.every((a) => a.dash === 0)).toBe(true);
   });
+
+  it('shrinks each arc by the separator and insets its start by half', () => {
+    const arcs = donutArcs([25, 75], 100, 4);
+
+    expect(arcs[0].dash).toBeCloseTo(21); // 25 - 4
+    expect(arcs[0].offset).toBeCloseTo(-2); // inset by separator / 2
+    expect(arcs[1].dash).toBeCloseTo(71); // 75 - 4
+    expect(arcs[1].offset).toBeCloseTo(-27); // -25 - 2
+  });
+
+  it('skips the separator when only one segment is visible', () => {
+    const arcs = donutArcs([100, 0], 100, 4);
+
+    expect(arcs[0].dash).toBeCloseTo(100); // full ring, no notch
+    expect(arcs[0].offset).toBeCloseTo(-0);
+  });
+
+  it('clamps slices smaller than the separator to zero instead of negative', () => {
+    const arcs = donutArcs([1, 99], 100, 4);
+
+    expect(arcs[0].dash).toBe(0);
+    expect(arcs[1].dash).toBeCloseTo(95);
+  });
 });
 
 describe('linePoints', () => {

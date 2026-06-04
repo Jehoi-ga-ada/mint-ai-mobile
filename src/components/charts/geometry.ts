@@ -6,16 +6,26 @@ export interface DonutArc {
   offset: number; // strokeDashoffset to position this arc after the previous
 }
 
-/** Convert segment values into stroke-dash arcs around a circle. */
-export function donutArcs(values: number[], circumference: number): DonutArc[] {
+/** Convert segment values into stroke-dash arcs around a circle.
+ * `separator` carves that many circumference units out of each slice (half per
+ * side) so the background shows through between adjacent slices — keeps
+ * neighbors readable even when their colors are close. Skipped when only one
+ * slice is visible, since a lone full ring would just show a notch. */
+export function donutArcs(
+  values: number[],
+  circumference: number,
+  separator = 0,
+): DonutArc[] {
   const total = values.reduce((s, v) => s + Math.max(v, 0), 0);
+  const visibleCount = values.filter((v) => v > 0).length;
+  const inset = visibleCount > 1 ? separator : 0;
   let acc = 0;
   return values.map((v) => {
     const frac = total > 0 ? Math.max(v, 0) / total : 0;
-    const dash = frac * circumference;
-    const arc: DonutArc = { dash, gap: circumference - dash, offset: -acc * circumference };
+    const dash = Math.max(frac * circumference - inset, 0);
+    const offset = -(acc * circumference + (dash > 0 ? inset / 2 : 0));
     acc += frac;
-    return arc;
+    return { dash, gap: circumference - dash, offset };
   });
 }
 
