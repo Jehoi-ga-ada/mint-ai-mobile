@@ -1,21 +1,16 @@
-import {
-  useMutation,
-  useQuery,
-  useQueryClient,
-  type QueryClient,
-} from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo } from 'react';
 
-import { applyOpsToStats, applyOpsToSummary, mergeTransactions } from '../offline/merge';
-import { type OpDisplay, useOutboxStore } from '../offline/outbox';
-import { flushOutbox } from '../offline/sync';
+import { importServerMoneyOnce } from '../money/import';
+import { useMoneyStore } from '../money/moneyStore';
+import { selectLedger, selectStats, selectSummary } from '../money/selectors';
+import type { MoneyData } from '../money/types';
 import { useAuthStore } from '../store/authStore';
 import { toISODate } from '../utils/dateRange';
 import type { DateRange } from '../utils/dateRange';
 import { api } from './client';
 import type {
   Account,
-  AccountBalance,
   AddAccount,
   AddInvestmentTransaction,
   AddPortfolio,
@@ -56,18 +51,11 @@ function rangeKey(range?: DateRange): string {
 export const queryKeys = {
   assets: ['assets'] as const,
   assetPrice: (id: string) => ['assetPrice', id] as const,
-  accounts: ['accounts'] as const,
-  categories: (kind?: string) => ['categories', kind ?? 'all'] as const,
   portfolios: ['portfolios'] as const,
   portfolio: (id: string) => ['portfolio', id] as const,
   portfolioHistory: (id: string, range?: DateRange) =>
     ['portfolio', id, 'history', rangeKey(range)] as const,
   portfolioTransactions: (id: string) => ['portfolio', id, 'transactions'] as const,
-  moneySummary: ['money', 'summary'] as const,
-  moneyStats: (type: string, range?: DateRange) =>
-    ['money', 'stats', type, rangeKey(range)] as const,
-  transactions: (type?: string, range?: DateRange) =>
-    ['money', 'transactions', type ?? 'all', rangeKey(range)] as const,
 };
 
 // -- Auth --------------------------------------------------------------------
@@ -89,8 +77,10 @@ export function useLogin() {
       });
       return data;
     },
-    onSuccess: async (token) => {
-      await signIn(token.access_token);
+    onSuccess: async (token, variables) => {
+      await signIn(token.access_token, variables.username);
+      // Best-effort, one-time pull of any existing server money into the local store.
+      importServerMoneyOnce();
     },
   });
 }
@@ -128,27 +118,51 @@ export function useAssetPrice(assetId: string | null) {
   });
 }
 
+// -- Local Money reference data (accounts + categories live on-device) --------
+
+const noop = () => {};
+
+/** A read result shaped like react-query's so screens that branch on
+ * isLoading/isError/refetch keep working unchanged. Local reads never load,
+ * never error, and have nothing to refetch. */
+function localResult<T>(data: T) {
+  return {
+    data,
+    isLoading: false,
+    isError: false,
+    isRefetching: false,
+    error: null,
+    refetch: noop,
+  } as const;
+}
+
+/** Local Money state assembled for the pure selectors. Subscribes to the slices
+ * that affect derived views so screens re-render on any change. */
+function useMoneyData(): MoneyData {
+  const accounts = useMoneyStore((s) => s.accounts);
+  const categories = useMoneyStore((s) => s.categories);
+  const transactions = useMoneyStore((s) => s.transactions);
+  return useMemo(
+    () => ({ accounts, categories, transactions, schemaVersion: 1, seeded: true, imported: false }),
+    [accounts, categories, transactions],
+  );
+}
+
 export function useAccounts() {
-  return useQuery({
-    queryKey: queryKeys.accounts,
-    queryFn: async (): Promise<Account[]> => (await api.get<Account[]>('/accounts')).data,
-  });
+  const accounts = useMoneyStore((s) => s.accounts);
+  return localResult<Account[]>(accounts);
 }
 
 export function useCategories(kind?: CategoryKind) {
-  return useQuery({
-    queryKey: queryKeys.categories(kind),
-    queryFn: async (): Promise<Category[]> =>
-      (await api.get<Category[]>('/categories', { params: kind ? { kind } : {} })).data,
-  });
+  const all = useMoneyStore((s) => s.categories);
+  const data = useMemo(() => (kind ? all.filter((c) => c.kind === kind) : all), [all, kind]);
+  return localResult<Category[]>(data);
 }
 
 export function useCreateCategory() {
-  const qc = useQueryClient();
   return useMutation({
     mutationFn: async (payload: AddCategory): Promise<Category> =>
-      (await api.post<Category>('/categories', payload)).data,
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['categories'] }),
+      useMoneyStore.getState().addCategory(payload),
   });
 }
 
@@ -231,123 +245,66 @@ export function useDeleteInvestmentTransaction() {
   });
 }
 
-// -- Money manager (IDR) -----------------------------------------------------
+// -- Money manager (IDR) — fully local, derived from the on-device store ------
 
 export function useMoneySummary() {
-  const query = useQuery({
-    queryKey: queryKeys.moneySummary,
-    queryFn: async (): Promise<MoneySummary> =>
-      (await api.get<MoneySummary>('/money/summary')).data,
-  });
-  const ops = useOutboxStore((s) => s.ops);
-  const data = useMemo(
-    () => (query.data ? applyOpsToSummary(query.data, ops) : query.data),
-    [query.data, ops],
-  );
-  return { ...query, data };
+  const data = useMoneyData();
+  const summary = useMemo<MoneySummary>(() => selectSummary(data), [data]);
+  return localResult<MoneySummary>(summary);
 }
 
 export function useMoneyStats(type: 'income' | 'expense', range?: DateRange) {
-  const query = useQuery({
-    queryKey: queryKeys.moneyStats(type, range),
-    queryFn: async (): Promise<MoneyStats> =>
-      (await api.get<MoneyStats>('/money/stats', { params: { type, ...rangeParams(range) } })).data,
-  });
-  const ops = useOutboxStore((s) => s.ops);
-  const data = useMemo(
-    () => (query.data ? applyOpsToStats(query.data, ops, { type, range }) : query.data),
-    [query.data, ops, type, range],
-  );
-  return { ...query, data };
+  const data = useMoneyData();
+  const stats = useMemo<MoneyStats>(() => selectStats(data, type, range), [data, type, range]);
+  return localResult<MoneyStats>(stats);
 }
 
 export function useTransactions(type?: 'income' | 'expense', range?: DateRange) {
-  const query = useQuery({
-    queryKey: queryKeys.transactions(type, range),
-    queryFn: async (): Promise<TransactionView[]> =>
-      (
-        await api.get<TransactionView[]>('/money/transactions', {
-          params: { type, ...rangeParams(range) },
-        })
-      ).data,
-  });
-  const ops = useOutboxStore((s) => s.ops);
-  // Overlay queued ops so offline creates/edits/deletes show immediately. Even
-  // with no server data yet (cold offline), pending creates still render.
-  const data = useMemo(
-    () => mergeTransactions(query.data, ops, { type, range }),
-    [query.data, ops, type, range],
+  const data = useMoneyData();
+  const ledger = useMemo<TransactionView[]>(
+    () => selectLedger(data, type, range),
+    [data, type, range],
   );
-  return { ...query, data };
+  return localResult<TransactionView[]>(ledger);
 }
 
-/** Resolve display names from the cached reference data so a queued transaction
- * can render in the ledger without a network round-trip (works fully offline). */
-function resolveNames(qc: QueryClient, payload: AddTransaction): OpDisplay {
-  const accounts = qc.getQueryData<Account[]>(queryKeys.accounts) ?? [];
-  const accountName = accounts.find((a) => a.id === payload.account_id)?.name ?? '—';
-  const categories =
-    qc.getQueryData<Category[]>(queryKeys.categories(payload.type)) ??
-    qc.getQueryData<Category[]>(queryKeys.categories(undefined)) ??
-    [];
-  const categoryName = categories.find((c) => c.id === payload.category_id)?.name ?? '—';
-  return { categoryName, accountName };
-}
-
-/** Money writes are offline-first: they enqueue to the local outbox (so the UI
- * updates instantly via the overlay) and the sync engine replays them to the
- * backend when reachable. They resolve as soon as the change is queued. */
+/** Money writes commit synchronously to the local store and resolve at once.
+ * `useMutation` is kept so callers keep their mutate/mutateAsync/isPending/
+ * onSuccess surface; the store re-renders subscribers, so no invalidation. */
 export function useCreateTransaction() {
-  const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (payload: AddTransaction) => {
-      const clientId = useOutboxStore
-        .getState()
-        .enqueueCreate(payload, resolveNames(qc, payload));
-      flushOutbox(qc);
-      return { clientId };
-    },
+    mutationFn: async (payload: AddTransaction) =>
+      useMoneyStore.getState().addTransaction(payload),
   });
 }
 
 export function useUpdateTransaction() {
-  const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({
       id,
       payload,
-      original,
     }: {
       id: string;
       payload: AddTransaction;
       original?: TransactionView;
     }) => {
-      useOutboxStore.getState().enqueueUpdate(id, payload, resolveNames(qc, payload), original);
-      flushOutbox(qc);
+      useMoneyStore.getState().updateTransaction(id, payload);
       return { id };
     },
   });
 }
 
 export function useDeleteTransaction() {
-  const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, original }: { id: string; original?: TransactionView }) => {
-      useOutboxStore.getState().enqueueDelete(id, original);
-      flushOutbox(qc);
+    mutationFn: async ({ id }: { id: string; original?: TransactionView }) => {
+      useMoneyStore.getState().deleteTransaction(id);
       return { id };
     },
   });
 }
 
 export function useCreateAccount() {
-  const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (payload: AddAccount) =>
-      (await api.post<AccountBalance>('/accounts', payload)).data,
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: queryKeys.accounts });
-      qc.invalidateQueries({ queryKey: queryKeys.moneySummary });
-    },
+    mutationFn: async (payload: AddAccount) => useMoneyStore.getState().addAccount(payload),
   });
 }

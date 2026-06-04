@@ -9,7 +9,12 @@ import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client
 import { StatusBar } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
-import { CACHE_BUSTER, CACHE_MAX_AGE, queryPersister } from './src/offline/persister';
+import {
+  CACHE_BUSTER,
+  CACHE_MAX_AGE,
+  queryPersister,
+  shouldPersistQuery,
+} from './src/offline/persister';
 import { RootNavigator } from './src/navigation/RootNavigator';
 import { colors } from './src/theme';
 
@@ -32,6 +37,9 @@ function App() {
         persister: queryPersister,
         maxAge: CACHE_MAX_AGE,
         buster: CACHE_BUSTER,
+        dehydrateOptions: {
+          shouldDehydrateQuery: (query) => shouldPersistQuery(query.queryKey),
+        },
       }}
     >
       <SafeAreaProvider>
