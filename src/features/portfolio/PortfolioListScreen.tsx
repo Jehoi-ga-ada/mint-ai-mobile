@@ -4,6 +4,7 @@ import { getErrorMessage } from '../../api/client';
 import { formatPct, toNumber } from '../../api/format';
 import { usePortfolios } from '../../api/hooks';
 import type { PortfolioView } from '../../api/types';
+import { aggregatePortfolios } from './portfolioTotals';
 import { AuthGate } from '../../components/AuthGate';
 import { Card } from '../../components/Card';
 import { Money } from '../../components/Money';
@@ -28,10 +29,7 @@ export function PortfolioListScreen(props: PortfolioStackScreenProps<'PortfolioL
 function PortfolioListContent({ navigation }: PortfolioStackScreenProps<'PortfolioList'>) {
   const portfolios = usePortfolios();
 
-  const total = (portfolios.data ?? []).reduce(
-    (sum, p) => sum + toNumber(p.summary.total_value),
-    0,
-  );
+  const { totalValue: total } = aggregatePortfolios(portfolios.data ?? []);
 
   return (
     <Screen>
