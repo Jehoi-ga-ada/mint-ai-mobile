@@ -27,6 +27,11 @@ export function Screen({ children, scroll, refreshing, onRefresh, fab, header }:
       {scroll ? (
         <ScrollView
           contentContainerStyle={styles.content}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="interactive"
+          // Inset the scroll content for the keyboard so focused fields and the
+          // controls below them are never hidden behind it (iOS).
+          automaticallyAdjustKeyboardInsets
           refreshControl={
             onRefresh ? (
               <RefreshControl

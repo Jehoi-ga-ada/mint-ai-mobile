@@ -1,7 +1,10 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
+  Animated,
   FlatList,
+  Keyboard,
   Modal,
+  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -31,8 +34,14 @@ interface PickerProps {
   createLabel?: string;
 }
 
-/** A tap-to-open modal list — replaces horizontal scroll pickers. Shows every
- * option vertically and optionally an inline "add new" shortcut. */
+// Above this many options, show a search field so the user can filter instead
+// of scrolling a long list (HIG: long selections want search, not a giant sheet).
+const SEARCH_THRESHOLD = 8;
+
+/** A select control presented as a sheet of tappable tiles in a 2-column grid —
+ * scannable at a glance and mostly fits on one screen, so there's far less
+ * scrolling than a long list. Adds a search field for large option sets and an
+ * inline "add new" shortcut. Consistent on iOS and Android. */
 export function Picker({
   label,
   options,
@@ -44,16 +53,50 @@ export function Picker({
   createLabel = 'Add new',
 }: PickerProps) {
   const insets = useSafeAreaInsets();
+  // Track the keyboard frame so the sheet rises exactly with it (matching iOS's
+  // animation curve/duration) — no lurch and no dim gap below the sheet.
+  const kbHeight = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    const showEvt = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvt = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+    const show = Keyboard.addListener(showEvt, (e) => {
+      Animated.timing(kbHeight, {
+        toValue: e.endCoordinates.height,
+        duration: e.duration ?? 250,
+        useNativeDriver: false,
+      }).start();
+    });
+    const hide = Keyboard.addListener(hideEvt, (e) => {
+      Animated.timing(kbHeight, {
+        toValue: 0,
+        duration: e.duration ?? 250,
+        useNativeDriver: false,
+      }).start();
+    });
+    return () => {
+      show.remove();
+      hide.remove();
+    };
+  }, [kbHeight]);
+
   const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState('');
   const [adding, setAdding] = useState(false);
   const [name, setName] = useState('');
   const [busy, setBusy] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
 
   const selected = options.find((o) => o.value === value);
+  const showSearch = options.length > SEARCH_THRESHOLD;
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return q ? options.filter((o) => o.label.toLowerCase().includes(q)) : options;
+  }, [options, query]);
 
   const close = () => {
     setOpen(false);
+    setQuery('');
     setAdding(false);
     setName('');
     setCreateError(null);
@@ -100,15 +143,28 @@ export function Picker({
       </Pressable>
 
       <Modal visible={open} transparent animationType="slide" onRequestClose={close}>
-        <View style={styles.overlay}>
+        <Animated.View style={[styles.overlay, { paddingBottom: kbHeight }]}>
           <Pressable style={styles.backdrop} onPress={close} accessibilityLabel="Close" />
           <View style={[styles.sheet, { paddingBottom: insets.bottom + spacing.lg }]}>
+            <View style={styles.grabber} />
             <View style={styles.sheetHeader}>
               <Text style={styles.sheetTitle}>{label}</Text>
               <Pressable onPress={close} accessibilityRole="button" accessibilityLabel="Close" hitSlop={8}>
                 <Icon name="close" color={colors.textMuted} size={22} />
               </Pressable>
             </View>
+
+            {showSearch && (
+              <TextInput
+                style={styles.search}
+                placeholder={`Search ${label.toLowerCase()}…`}
+                placeholderTextColor={colors.textMuted}
+                value={query}
+                onChangeText={setQuery}
+                autoCorrect={false}
+                clearButtonMode="while-editing"
+              />
+            )}
 
             {onCreate &&
               (adding ? (
@@ -148,15 +204,18 @@ export function Picker({
               ))}
 
             <FlatList
-              data={options}
+              data={filtered}
               keyExtractor={(o) => o.value}
-              style={styles.list}
+              numColumns={2}
+              columnWrapperStyle={styles.gridRow}
+              style={styles.grid}
               keyboardShouldPersistTaps="handled"
+              ListEmptyComponent={<Text style={styles.empty}>No matches</Text>}
               renderItem={({ item }) => {
                 const active = item.value === value;
                 return (
                   <Pressable
-                    style={styles.option}
+                    style={[styles.tile, active && styles.tileActive]}
                     onPress={() => {
                       onChange(item.value);
                       close();
@@ -165,16 +224,23 @@ export function Picker({
                     accessibilityLabel={item.label}
                     accessibilityState={{ selected: active }}
                   >
-                    <Text style={[styles.optionText, active && styles.optionTextActive]}>
+                    <Text
+                      style={[styles.tileText, active && styles.tileTextActive]}
+                      numberOfLines={2}
+                    >
                       {item.label}
                     </Text>
-                    {active && <Icon name="check" color={colors.primary} size={20} />}
+                    {active && (
+                      <View style={styles.tileCheck}>
+                        <Icon name="check" color={colors.primary} size={16} />
+                      </View>
+                    )}
                   </Pressable>
                 );
               }}
             />
           </View>
-        </View>
+        </Animated.View>
       </Modal>
     </View>
   );
@@ -211,10 +277,17 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: radius.lg,
     borderTopRightRadius: radius.lg,
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.lg,
-    paddingBottom: spacing.xl,
-    maxHeight: '70%',
-    gap: spacing.sm,
+    paddingTop: spacing.sm,
+    maxHeight: '80%',
+    gap: spacing.md,
+  },
+  grabber: {
+    alignSelf: 'center',
+    width: 36,
+    height: 5,
+    borderRadius: radius.pill,
+    backgroundColor: colors.border,
+    marginBottom: spacing.sm,
   },
   sheetHeader: {
     flexDirection: 'row',
@@ -222,11 +295,19 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   sheetTitle: { ...typography.heading, color: colors.text },
+  search: {
+    ...typography.body,
+    color: colors.text,
+    backgroundColor: colors.surfaceAlt,
+    borderRadius: radius.md,
+    paddingHorizontal: spacing.md,
+    height: 44,
+  },
   createRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
-    paddingVertical: spacing.md,
+    paddingVertical: spacing.xs,
   },
   createText: { ...typography.body, color: colors.primary, fontWeight: '600' },
   addWrap: { gap: spacing.xs },
@@ -250,15 +331,23 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   disabled: { opacity: 0.5 },
-  list: { flexGrow: 0 },
-  option: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: spacing.md,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.border,
+  grid: { flexGrow: 0 },
+  gridRow: { gap: spacing.sm },
+  tile: {
+    flex: 1,
+    minHeight: 56,
+    borderRadius: radius.md,
+    backgroundColor: colors.surfaceAlt,
+    borderWidth: 1,
+    borderColor: 'transparent',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    marginBottom: spacing.sm,
+    justifyContent: 'center',
   },
-  optionText: { ...typography.body, color: colors.text },
-  optionTextActive: { color: colors.primary, fontWeight: '600' },
+  tileActive: { borderColor: colors.primary, backgroundColor: colors.surface },
+  tileText: { ...typography.body, color: colors.text },
+  tileTextActive: { color: colors.primary, fontWeight: '600' },
+  tileCheck: { position: 'absolute', top: spacing.xs, right: spacing.xs },
+  empty: { ...typography.body, color: colors.textMuted, textAlign: 'center', paddingVertical: spacing.lg },
 });

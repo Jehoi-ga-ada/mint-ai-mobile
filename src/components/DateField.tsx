@@ -1,5 +1,8 @@
+import DateTimePicker, {
+  type DateTimePickerChangeEvent,
+} from '@react-native-community/datetimepicker';
 import { useState } from 'react';
-import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Modal, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { colors, radius, spacing, typography } from '../theme';
@@ -14,9 +17,94 @@ interface DateFieldProps {
   onChange: (date: Date) => void;
 }
 
-/** Single-date picker — a field that opens a month calendar. Defaults to the
- * provided value (use today for new entries). Pure RN, no native picker. */
-export function DateField({ label, value, onChange }: DateFieldProps) {
+/** A field that opens a date picker. iOS uses the native inline UIDatePicker;
+ * Android uses a custom month calendar to match the dark theme. */
+export function DateField(props: DateFieldProps) {
+  if (Platform.OS === 'ios') {
+    return <IOSDateField {...props} />;
+  }
+  return <AndroidDateField {...props} />;
+}
+
+/** Shared trigger field showing the selected date. */
+function DateFieldTrigger({
+  label,
+  value,
+  onPress,
+}: {
+  label: string;
+  value: Date;
+  onPress: () => void;
+}) {
+  return (
+    <View style={styles.wrapper}>
+      <Text style={styles.label}>{label}</Text>
+      <Pressable
+        style={styles.field}
+        onPress={onPress}
+        accessibilityRole="button"
+        accessibilityLabel={`${label}: ${toISODate(value)}`}
+      >
+        <Text style={styles.fieldText}>{toISODate(value)}</Text>
+        <Icon name="calendar" color={colors.textMuted} size={18} />
+      </Pressable>
+    </View>
+  );
+}
+
+function IOSDateField({ label, value, onChange }: DateFieldProps) {
+  const insets = useSafeAreaInsets();
+  const [open, setOpen] = useState(false);
+  const [draft, setDraft] = useState(value);
+
+  const onPickerChange = (_event: DateTimePickerChangeEvent, date: Date) => {
+    if (date) {
+      setDraft(date);
+    }
+  };
+
+  const done = () => {
+    onChange(draft);
+    setOpen(false);
+  };
+
+  return (
+    <>
+      <DateFieldTrigger
+        label={label}
+        value={value}
+        onPress={() => {
+          setDraft(value);
+          setOpen(true);
+        }}
+      />
+
+      <Modal visible={open} transparent animationType="slide" onRequestClose={done}>
+        <View style={styles.overlay}>
+          <Pressable style={styles.backdrop} onPress={done} accessibilityLabel="Close" />
+          <View style={[styles.sheet, { paddingBottom: insets.bottom + spacing.lg }]}>
+            <View style={styles.header}>
+              <Text style={styles.monthLabel}>{label}</Text>
+              <Pressable onPress={done} accessibilityRole="button" accessibilityLabel="Done" hitSlop={8}>
+                <Text style={styles.doneText}>Done</Text>
+              </Pressable>
+            </View>
+            <DateTimePicker
+              value={draft}
+              mode="date"
+              display="inline"
+              themeVariant="dark"
+              accentColor={colors.primary}
+              onValueChange={onPickerChange}
+            />
+          </View>
+        </View>
+      </Modal>
+    </>
+  );
+}
+
+function AndroidDateField({ label, value, onChange }: DateFieldProps) {
   const insets = useSafeAreaInsets();
   const [open, setOpen] = useState(false);
   const [view, setView] = useState(() => new Date(value.getFullYear(), value.getMonth(), 1));
@@ -37,20 +125,15 @@ export function DateField({ label, value, onChange }: DateFieldProps) {
   const iso = (d: Date | null) => (d ? toISODate(d) : null);
 
   return (
-    <View style={styles.wrapper}>
-      <Text style={styles.label}>{label}</Text>
-      <Pressable
-        style={styles.field}
+    <>
+      <DateFieldTrigger
+        label={label}
+        value={value}
         onPress={() => {
           setView(new Date(value.getFullYear(), value.getMonth(), 1));
           setOpen(true);
         }}
-        accessibilityRole="button"
-        accessibilityLabel={`${label}: ${toISODate(value)}`}
-      >
-        <Text style={styles.fieldText}>{toISODate(value)}</Text>
-        <Icon name="calendar" color={colors.textMuted} size={18} />
-      </Pressable>
+      />
 
       <Modal visible={open} transparent animationType="slide" onRequestClose={() => setOpen(false)}>
         <View style={styles.overlay}>
@@ -117,7 +200,7 @@ export function DateField({ label, value, onChange }: DateFieldProps) {
           </View>
         </View>
       </Modal>
-    </View>
+    </>
   );
 }
 
@@ -153,6 +236,7 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  doneText: { ...typography.heading, color: colors.primary },
   navBtn: { padding: spacing.xs },
   monthLabel: { ...typography.heading, color: colors.text },
   weekRow: { flexDirection: 'row' },

@@ -15,7 +15,10 @@ export type IconName =
   | 'calendar'
   | 'wifiOff'
   | 'alertCircle'
-  | 'refresh';
+  | 'refresh'
+  | 'sparkles'
+  | 'logIn'
+  | 'logOut';
 
 interface IconProps {
   name: IconName;
@@ -134,6 +137,26 @@ const GLYPHS: Record<IconName, (s: StrokeProps) => ReactNode> = {
       <Polyline points="23 4 23 10 17 10" {...s} />
       <Polyline points="1 20 1 14 7 14" {...s} />
       <Path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" {...s} />
+    </>
+  ),
+  sparkles: (s) => (
+    <>
+      <Path d="M10 3 L11.6 8.4 L17 10 L11.6 11.6 L10 17 L8.4 11.6 L3 10 L8.4 8.4 Z" {...s} />
+      <Path d="M18 13 L18.7 15.3 L21 16 L18.7 16.7 L18 19 L17.3 16.7 L15 16 L17.3 15.3 Z" {...s} />
+    </>
+  ),
+  logIn: (s) => (
+    <>
+      <Path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" {...s} />
+      <Polyline points="10 17 15 12 10 7" {...s} />
+      <Line x1={15} y1={12} x2={3} y2={12} {...s} />
+    </>
+  ),
+  logOut: (s) => (
+    <>
+      <Path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" {...s} />
+      <Polyline points="16 17 21 12 16 7" {...s} />
+      <Line x1={21} y1={12} x2={9} y2={12} {...s} />
     </>
   ),
 };
