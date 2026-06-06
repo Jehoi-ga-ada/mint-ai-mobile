@@ -11,6 +11,8 @@ export interface ChatMessageView {
   images: string[];
   status: ChatMessageStatus;
   error?: string;
+  /** Transient activity note shown while streaming with no text yet. */
+  note?: string;
 }
 
 /** Wire shape for one turn of `POST /chat/stream`. */

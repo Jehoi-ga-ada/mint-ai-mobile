@@ -4,6 +4,8 @@ import { API_BASE_URL } from '../config';
 export interface SseEvent {
   content?: string;
   error?: string;
+  /** Tool-activity marker (e.g. a web search starting). */
+  status?: string;
 }
 
 export interface SseParseResult {
@@ -59,6 +61,8 @@ export interface StreamCallbacks {
   onToken: (token: string) => void;
   onDone: () => void;
   onError: (message: string, status?: number) => void;
+  /** Tool activity started server-side (worth showing as a status line). */
+  onStatus?: (status: string) => void;
 }
 
 function extractDetail(responseText: string): string | null {
@@ -101,6 +105,9 @@ export function streamChat(body: unknown, token: string | null, cb: StreamCallba
       }
       if (typeof event.content === 'string') {
         cb.onToken(event.content);
+      }
+      if (typeof event.status === 'string') {
+        cb.onStatus?.(event.status);
       }
     }
     return done;

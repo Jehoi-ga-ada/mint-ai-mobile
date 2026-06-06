@@ -74,6 +74,14 @@ export const useChatStore = create<ChatStore>((set, get) => {
               m.id === placeholder.id ? { ...m, text: m.text + token } : m,
             ),
           }),
+        onStatus: () =>
+          set({
+            messages: get().messages.map((m) =>
+              m.id === placeholder.id && m.text.length === 0
+                ? { ...m, note: 'Searching the web…' }
+                : m,
+            ),
+          }),
         onDone: () =>
           finish((m) =>
             m.text.trim().length > 0

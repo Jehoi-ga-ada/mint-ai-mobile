@@ -1,9 +1,11 @@
+import { useRef } from 'react';
 import { ActionSheetIOS, Alert, Image, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Icon } from '../../components/Icon';
 import { colors, radius, spacing, typography } from '../../theme';
 import type { ChatMessageView } from './chatModel';
 import { MarkdownText } from './MarkdownText';
+import { useTypewriter } from './useTypewriter';
 
 const BUBBLE_MAX_WIDTH = '84%';
 const THUMB_SIZE = 132;
@@ -47,6 +49,12 @@ export function ChatBubble({ message, onEdit, onUndoFrom, onRetry }: ChatBubbleP
   const isError = message.status === 'error';
   const canAct = isUser && onEdit && onUndoFrom;
 
+  // Typewriter-reveal only messages that are streaming in THIS mount —
+  // hydrated/finished messages (and recycled list rows) render instantly.
+  const animate = useRef(!isUser && message.status === 'streaming').current;
+  const shownText = useTypewriter(message.text, animate);
+  const isTyping = message.status === 'streaming' || shownText.length < message.text.length;
+
   const body = (
     <View
       style={[
@@ -68,14 +76,16 @@ export function ChatBubble({ message, onEdit, onUndoFrom, onRetry }: ChatBubbleP
           ))}
         </View>
       )}
-      {message.text.length > 0 &&
+      {shownText.length > 0 &&
         (isUser ? (
           <Text style={styles.text}>{message.text}</Text>
         ) : (
-          <MarkdownText text={message.text} />
+          <MarkdownText text={shownText} />
         ))}
-      {message.status === 'streaming' && (
-        <Text style={styles.cursor}>{message.text.length > 0 ? '▍' : 'Thinking…'}</Text>
+      {isTyping && (
+        <Text style={styles.cursor}>
+          {shownText.length > 0 ? '▍' : (message.note ?? 'Thinking…')}
+        </Text>
       )}
       {isError && (
         <View style={styles.errorRow}>
