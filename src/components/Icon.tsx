@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import Svg, { Circle, Line, Path, Polyline } from 'react-native-svg';
+import Svg, { Circle, Line, Path, Polyline, Rect } from 'react-native-svg';
 
 export type IconName =
   | 'eye'
@@ -18,7 +18,13 @@ export type IconName =
   | 'refresh'
   | 'sparkles'
   | 'logIn'
-  | 'logOut';
+  | 'logOut'
+  | 'arrowUp'
+  | 'image'
+  | 'undo'
+  | 'stop'
+  | 'trash'
+  | 'edit';
 
 interface IconProps {
   name: IconName;
@@ -159,4 +165,31 @@ const GLYPHS: Record<IconName, (s: StrokeProps) => ReactNode> = {
       <Line x1={21} y1={12} x2={9} y2={12} {...s} />
     </>
   ),
+  arrowUp: (s) => (
+    <>
+      <Line x1={12} y1={19} x2={12} y2={5} {...s} />
+      <Polyline points="5 12 12 5 19 12" {...s} />
+    </>
+  ),
+  image: (s) => (
+    <>
+      <Rect x={3} y={3} width={18} height={18} rx={2} {...s} />
+      <Circle cx={8.5} cy={8.5} r={1.5} {...s} />
+      <Polyline points="21 15 16 10 5 21" {...s} />
+    </>
+  ),
+  undo: (s) => (
+    <>
+      <Polyline points="9 14 4 9 9 4" {...s} />
+      <Path d="M20 20v-7a4 4 0 0 0-4-4H4" {...s} />
+    </>
+  ),
+  stop: (s) => <Rect x={6} y={6} width={12} height={12} rx={2} fill={s.stroke} stroke="none" />,
+  trash: (s) => (
+    <>
+      <Polyline points="3 6 5 6 21 6" {...s} />
+      <Path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" {...s} />
+    </>
+  ),
+  edit: (s) => <Path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" {...s} />,
 };
