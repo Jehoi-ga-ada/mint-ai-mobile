@@ -29,6 +29,45 @@ export function donutArcs(
   });
 }
 
+/** Extra tappable margin around the ring stroke, in px. */
+const RING_TOUCH_SLOP = 8;
+
+/** Which slice a tap at (x, y) on a size×size donut hits, or null when the tap
+ * is in the hole / outside the ring. Slices are laid out clockwise from
+ * 12 o'clock (the chart rotates the circle -90°), matching donutArcs order.
+ * Pure math because SVG stroke hit-testing on dashed circles is unreliable. */
+export function sliceIndexAtPoint(
+  x: number,
+  y: number,
+  size: number,
+  strokeWidth: number,
+  values: number[],
+): number | null {
+  const center = size / 2;
+  const radius = (size - strokeWidth) / 2;
+  const dx = x - center;
+  const dy = y - center;
+  const dist = Math.hypot(dx, dy);
+  if (dist < radius - strokeWidth / 2 - RING_TOUCH_SLOP || dist > radius + strokeWidth / 2 + RING_TOUCH_SLOP) {
+    return null;
+  }
+  const total = values.reduce((s, v) => s + Math.max(v, 0), 0);
+  if (total <= 0) {
+    return null;
+  }
+  // Screen coords (y down): atan2 = 0 at 3 o'clock, clockwise-positive.
+  const degrees = (Math.atan2(dy, dx) * 180) / Math.PI;
+  const fromTop = (((degrees + 90) % 360) + 360) % 360 / 360;
+  let acc = 0;
+  for (let i = 0; i < values.length; i += 1) {
+    acc += Math.max(values[i], 0) / total;
+    if (fromTop < acc) {
+      return i;
+    }
+  }
+  return values.length - 1; // floating-point edge at exactly 360°
+}
+
 export interface Point {
   x: number;
   y: number;

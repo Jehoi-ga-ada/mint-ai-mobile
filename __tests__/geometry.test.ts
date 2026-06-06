@@ -1,4 +1,9 @@
-import { donutArcs, linePoints, pointsToString } from '../src/components/charts/geometry';
+import {
+  donutArcs,
+  linePoints,
+  pointsToString,
+  sliceIndexAtPoint,
+} from '../src/components/charts/geometry';
 
 describe('donutArcs', () => {
   it('splits the circumference proportionally and chains offsets', () => {
@@ -37,6 +42,40 @@ describe('donutArcs', () => {
 
     expect(arcs[0].dash).toBe(0);
     expect(arcs[1].dash).toBeCloseTo(95);
+  });
+});
+
+describe('sliceIndexAtPoint', () => {
+  // 180px donut, 26px stroke → center 90, ring radius 77.
+  const SIZE = 180;
+  const STROKE = 26;
+
+  it('maps ring taps to slices clockwise from 12 o-clock', () => {
+    const values = [50, 50];
+
+    expect(sliceIndexAtPoint(90, 13, SIZE, STROKE, values)).toBe(0); // top
+    expect(sliceIndexAtPoint(167, 90, SIZE, STROKE, values)).toBe(0); // right (3 o'clock)
+    expect(sliceIndexAtPoint(90, 167, SIZE, STROKE, values)).toBe(1); // bottom
+    expect(sliceIndexAtPoint(13, 90, SIZE, STROKE, values)).toBe(1); // left (9 o'clock)
+  });
+
+  it('weights slices by value', () => {
+    const values = [75, 25]; // first slice covers top→9 o'clock
+
+    expect(sliceIndexAtPoint(90, 167, SIZE, STROKE, values)).toBe(0); // bottom still slice 0
+    expect(sliceIndexAtPoint(13, 90, SIZE, STROKE, values)).toBe(1); // left is slice 1
+  });
+
+  it('returns null for the hole and outside the ring', () => {
+    const values = [100];
+
+    expect(sliceIndexAtPoint(90, 90, SIZE, STROKE, values)).toBeNull(); // center
+    expect(sliceIndexAtPoint(90, 91, SIZE, STROKE, values)).toBeNull(); // near center
+    expect(sliceIndexAtPoint(0, 0, SIZE, STROKE, values)).toBeNull(); // corner
+  });
+
+  it('returns null when there is no data', () => {
+    expect(sliceIndexAtPoint(90, 13, SIZE, STROKE, [0, 0])).toBeNull();
   });
 });
 

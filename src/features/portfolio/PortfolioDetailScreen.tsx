@@ -84,6 +84,7 @@ export function PortfolioDetailScreen({
             segments={segments}
             centerValue={hidden ? '••••' : formatMoney(summary.total_value, USD)}
             centerLabel="Value"
+            formatValue={(value) => (hidden ? '••••' : formatMoney(value, USD))}
           />
           <ChartLegend segments={segments} currency={USD} />
         </Card>

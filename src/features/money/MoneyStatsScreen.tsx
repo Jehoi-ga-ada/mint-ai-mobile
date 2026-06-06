@@ -94,6 +94,7 @@ function StatsBody({ type, stats }: StatsBodyProps) {
             centerValue={formatMoney(stats.total, IDR)}
             centerLabel={type === 'income' ? 'Income' : 'Spent'}
             centerValueColor={type === 'income' ? colors.positive : colors.negative}
+            formatValue={(value) => formatMoney(value, IDR)}
           />
           <Text style={styles.caption}>Share of {type} by category</Text>
           <ChartLegend segments={segments} currency={IDR} />
