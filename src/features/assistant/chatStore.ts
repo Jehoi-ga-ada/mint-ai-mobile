@@ -2,7 +2,9 @@ import uuid from 'react-native-uuid';
 import { create } from 'zustand';
 
 import { streamChat } from '../../api/sse';
+import { useMoneyStore } from '../../money/moneyStore';
 import { useAuthStore } from '../../store/authStore';
+import { buildMoneyContext } from './moneyContext';
 import {
   type ChatMessageView,
   historyForRegenerate,
@@ -65,7 +67,12 @@ export const useChatStore = create<ChatStore>((set, get) => {
     };
 
     abortStream = streamChat(
-      { messages: toChatPayload(history) },
+      {
+        messages: toChatPayload(history),
+        // Money data lives on-device only; ship a compact summary so the
+        // assistant can answer spending/balance questions.
+        money_context: buildMoneyContext(useMoneyStore.getState()),
+      },
       useAuthStore.getState().token,
       {
         onToken: (token) =>
@@ -74,14 +81,17 @@ export const useChatStore = create<ChatStore>((set, get) => {
               m.id === placeholder.id ? { ...m, text: m.text + token } : m,
             ),
           }),
-        onStatus: () =>
+        onStatus: (status) => {
+          // The server sends the tool name; phrase it as user-facing activity.
+          const note = status.includes('portfolio') || status.includes('transactions')
+            ? 'Checking your data…'
+            : 'Searching the web…';
           set({
             messages: get().messages.map((m) =>
-              m.id === placeholder.id && m.text.length === 0
-                ? { ...m, note: 'Searching the web…' }
-                : m,
+              m.id === placeholder.id && m.text.length === 0 ? { ...m, note } : m,
             ),
-          }),
+          });
+        },
         onDone: () =>
           finish((m) =>
             m.text.trim().length > 0
