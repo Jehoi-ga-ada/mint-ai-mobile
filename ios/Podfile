@@ -1,3 +1,9 @@
+# Build React core from source. The prebuilt React.xcframework (RN 0.85
+# default) hides RTTI symbols (typeinfo/vtables for Props/BaseViewProps/...)
+# that third-party Fabric components (RNSVG, RNScreens, datetimepicker) need
+# at link time — prebuilt mode breaks the app link with "symbol(s) not found".
+ENV['RCT_USE_PREBUILT_RNCORE'] = '0'
+
 # Resolve react_native_pods.rb with node to allow for hoisting
 require Pod::Executable.execute_command('node', ['-p',
   'require.resolve(
