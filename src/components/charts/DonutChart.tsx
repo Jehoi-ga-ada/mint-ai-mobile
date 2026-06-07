@@ -1,4 +1,3 @@
-import { useEffect, useState } from 'react';
 import { type GestureResponderEvent, Pressable, StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle, G } from 'react-native-svg';
 
@@ -20,10 +19,14 @@ interface DonutChartProps {
   centerLabel?: string;
   /** Tint for the center value (e.g. red for expense, green for income). */
   centerValueColor?: string;
-  /** Formats a slice's value for the tap-to-inspect center readout. Providing
-   * it makes slices tappable: tap a slice to see its label/value/share, tap it
-   * again (or the hole) to return to the overall total. */
+  /** Formats a slice's value for the tap-to-inspect center readout. */
   formatValue?: (value: number) => string;
+  /** Controlled selection (pair with useSliceSelection so the legend stays in
+   * sync). Providing both makes slices tappable: the center swaps to the
+   * selected slice's value and share — the full name lives in the legend row,
+   * so nothing ever truncates inside the hole. */
+  selectedKey?: string | null;
+  onSelect?: (key: string | null) => void;
 }
 
 export function DonutChart({
@@ -34,6 +37,8 @@ export function DonutChart({
   centerLabel,
   centerValueColor,
   formatValue,
+  selectedKey,
+  onSelect,
 }: DonutChartProps) {
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
@@ -44,16 +49,13 @@ export function DonutChart({
     SLICE_SEPARATOR,
   );
 
-  const [selectedKey, setSelectedKey] = useState<string | null>(null);
-  // New data (range change, refresh) invalidates the selection.
-  useEffect(() => {
-    setSelectedKey(null);
-  }, [segments]);
-
-  const selectable = formatValue != null;
+  const selectable = formatValue != null && onSelect != null;
   const selected = selectable ? (segments.find((s) => s.key === selectedKey) ?? null) : null;
 
   const handlePress = (event: GestureResponderEvent) => {
+    if (!onSelect) {
+      return;
+    }
     const { locationX, locationY } = event.nativeEvent;
     const index = sliceIndexAtPoint(
       locationX,
@@ -62,8 +64,7 @@ export function DonutChart({
       strokeWidth,
       segments.map((s) => s.value),
     );
-    const key = index === null ? null : segments[index].key;
-    setSelectedKey((current) => (key === null || current === key ? null : key));
+    onSelect(index === null ? null : segments[index].key);
   };
 
   const chart = (
@@ -113,9 +114,7 @@ export function DonutChart({
               <Text style={[styles.centerValue, { color: selected.color }]}>
                 {formatValue(selected.value)}
               </Text>
-              <Text style={styles.centerLabel} numberOfLines={1}>
-                {selected.label} · {selected.pct.toFixed(1)}%
-              </Text>
+              <Text style={styles.centerLabel}>{selected.pct.toFixed(1)}% of total</Text>
             </>
           ) : (
             <>
@@ -137,7 +136,7 @@ export function DonutChart({
 
 const styles = StyleSheet.create({
   wrapper: { alignItems: 'center', justifyContent: 'center', alignSelf: 'center' },
-  center: { position: 'absolute', alignItems: 'center', maxWidth: '60%' },
+  center: { position: 'absolute', alignItems: 'center', maxWidth: '64%' },
   centerValue: { ...typography.heading, color: colors.text },
   centerLabel: { ...typography.caption, color: colors.textMuted },
 });

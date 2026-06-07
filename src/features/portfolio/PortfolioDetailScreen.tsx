@@ -8,7 +8,8 @@ import type { HoldingView } from '../../api/types';
 import { ChartLegend } from '../../components/charts/ChartLegend';
 import { DonutChart } from '../../components/charts/DonutChart';
 import { LineChart } from '../../components/charts/LineChart';
-import { buildSegments, holdingsToInputs } from '../../components/charts/segments';
+import { buildSegments, holdingsToInputs, type Segment } from '../../components/charts/segments';
+import { useSliceSelection } from '../../components/charts/useSliceSelection';
 import { Card } from '../../components/Card';
 import { Fab } from '../../components/Fab';
 import { Money } from '../../components/Money';
@@ -78,16 +79,11 @@ export function PortfolioDetailScreen({
       </Card>
 
       {segments.length > 0 && (
-        <Card style={styles.allocCard}>
-          <Text style={styles.sectionTitle}>Allocation</Text>
-          <DonutChart
-            segments={segments}
-            centerValue={hidden ? '••••' : formatMoney(summary.total_value, USD)}
-            centerLabel="Value"
-            formatValue={(value) => (hidden ? '••••' : formatMoney(value, USD))}
-          />
-          <ChartLegend segments={segments} currency={USD} />
-        </Card>
+        <AllocationCard
+          segments={segments}
+          hidden={hidden}
+          totalValue={formatMoney(summary.total_value, USD)}
+        />
       )}
 
       <View style={styles.holdingsHead}>
@@ -121,6 +117,35 @@ export function PortfolioDetailScreen({
       />
       <Fab label="+ Add" onPress={goAdd} />
     </Screen>
+  );
+}
+
+interface AllocationCardProps {
+  segments: Segment[];
+  hidden: boolean;
+  totalValue: string;
+}
+
+function AllocationCard({ segments, hidden, totalValue }: AllocationCardProps) {
+  const { selectedKey, toggle } = useSliceSelection(segments);
+  return (
+    <Card style={styles.allocCard}>
+      <Text style={styles.sectionTitle}>Allocation</Text>
+      <DonutChart
+        segments={segments}
+        centerValue={hidden ? '••••' : totalValue}
+        centerLabel="Value"
+        formatValue={(value) => (hidden ? '••••' : formatMoney(value, USD))}
+        selectedKey={selectedKey}
+        onSelect={toggle}
+      />
+      <ChartLegend
+        segments={segments}
+        currency={USD}
+        selectedKey={selectedKey}
+        onSelect={toggle}
+      />
+    </Card>
   );
 }
 

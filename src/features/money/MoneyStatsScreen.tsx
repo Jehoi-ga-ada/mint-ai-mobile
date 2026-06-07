@@ -7,6 +7,7 @@ import { useMoneyStats } from '../../api/hooks';
 import { ChartLegend } from '../../components/charts/ChartLegend';
 import { DonutChart } from '../../components/charts/DonutChart';
 import { buildSegments } from '../../components/charts/segments';
+import { useSliceSelection } from '../../components/charts/useSliceSelection';
 import { Card } from '../../components/Card';
 import { RangeSelector } from '../../components/RangeSelector';
 import { Screen } from '../../components/Screen';
@@ -82,6 +83,7 @@ function StatsBody({ type, stats }: StatsBodyProps) {
     })),
     paletteForType(type),
   );
+  const { selectedKey, toggle } = useSliceSelection(segments);
 
   return (
     <Card style={styles.card}>
@@ -95,9 +97,16 @@ function StatsBody({ type, stats }: StatsBodyProps) {
             centerLabel={type === 'income' ? 'Income' : 'Spent'}
             centerValueColor={type === 'income' ? colors.positive : colors.negative}
             formatValue={(value) => formatMoney(value, IDR)}
+            selectedKey={selectedKey}
+            onSelect={toggle}
           />
           <Text style={styles.caption}>Share of {type} by category</Text>
-          <ChartLegend segments={segments} currency={IDR} />
+          <ChartLegend
+            segments={segments}
+            currency={IDR}
+            selectedKey={selectedKey}
+            onSelect={toggle}
+          />
         </>
       )}
     </Card>
