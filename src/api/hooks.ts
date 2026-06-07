@@ -11,6 +11,7 @@ import type { DateRange } from '../utils/dateRange';
 import { api } from './client';
 import type {
   Account,
+  AccountType,
   AddAccount,
   AddInvestmentTransaction,
   AddPortfolio,
@@ -306,5 +307,23 @@ export function useDeleteTransaction() {
 export function useCreateAccount() {
   return useMutation({
     mutationFn: async (payload: AddAccount) => useMoneyStore.getState().addAccount(payload),
+  });
+}
+
+export function useUpdateAccount() {
+  return useMutation({
+    mutationFn: async ({ id, ...patch }: { id: string; name: string; type: AccountType }) => {
+      useMoneyStore.getState().updateAccount(id, patch);
+      return { id };
+    },
+  });
+}
+
+export function useDeleteAccount() {
+  return useMutation({
+    mutationFn: async (id: string) => {
+      useMoneyStore.getState().deleteAccount(id);
+      return { id };
+    },
   });
 }

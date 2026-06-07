@@ -112,6 +112,27 @@ describe('moneyStore CRUD', () => {
     expect(txn?.account_name).toBe('BCA');
   });
 
+  test('deleteAccount removes the account and its transactions', () => {
+    const other = useMoneyStore
+      .getState()
+      .addAccount({ name: 'BCA', type: 'bank', currency: 'IDR', institution: null });
+    const mine = useMoneyStore.getState().addTransaction(addPayload());
+    const theirs = useMoneyStore.getState().addTransaction(addPayload({ account_id: other.id }));
+
+    useMoneyStore.getState().deleteAccount('acc-1');
+
+    const state = useMoneyStore.getState();
+    expect(state.accounts.map((a) => a.id)).toEqual([other.id]);
+    expect(state.transactions.map((t) => t.id)).toEqual([theirs.id]);
+    expect(state.transactions.find((t) => t.id === mine.id)).toBeUndefined();
+  });
+
+  test('updateAccount can change the account type', () => {
+    useMoneyStore.getState().updateAccount('acc-1', { type: 'ewallet' });
+
+    expect(useMoneyStore.getState().accounts.find((a) => a.id === 'acc-1')?.type).toBe('ewallet');
+  });
+
   test('addAccount and addCategory return the created record with an id', () => {
     const acc = useMoneyStore
       .getState()
