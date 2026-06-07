@@ -71,7 +71,7 @@ export function LoginScreen({ navigation }: RootStackScreenProps<'Login'>) {
 
       <Button title="Log in" onPress={onSubmit} loading={login.isPending} />
 
-      <Pressable onPress={() => navigation.navigate('Register')}>
+      <Pressable onPress={() => navigation.replace('Register')}>
         <Text style={styles.link}>No account? Create one</Text>
       </Pressable>
     </Screen>

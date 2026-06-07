@@ -95,7 +95,7 @@ export function RegisterScreen({ navigation }: RootStackScreenProps<'Register'>)
 
       <Button title="Sign up" onPress={onSubmit} loading={pending} />
 
-      <Pressable onPress={() => navigation.goBack()}>
+      <Pressable onPress={() => navigation.replace('Login')}>
         <Text style={styles.link}>Already have an account? Log in</Text>
       </Pressable>
     </Screen>
