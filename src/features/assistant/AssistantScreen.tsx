@@ -1,10 +1,10 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
+  Animated,
   FlatList,
   Image,
   Keyboard,
-  KeyboardAvoidingView,
   Platform,
   Pressable,
   StyleSheet,
@@ -50,7 +50,6 @@ function ChatContent() {
 
   const [draft, setDraft] = useState('');
   const [attached, setAttached] = useState<string[]>([]);
-  const [keyboardOpen, setKeyboardOpen] = useState(false);
 
   useEffect(() => {
     if (!hydrated) {
@@ -58,16 +57,33 @@ function ChatContent() {
     }
   }, [hydrated]);
 
+  // Track the keyboard frame directly (KeyboardAvoidingView mis-measures under
+  // the floating tab bar and leaves the composer behind the keyboard). The
+  // composer rides the keyboard's own animation, mirroring Picker.tsx.
+  const bottomSpace = useRef(new Animated.Value(TAB_BAR_CLEARANCE)).current;
   useEffect(() => {
-    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
-    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
-    const show = Keyboard.addListener(showEvent, () => setKeyboardOpen(true));
-    const hide = Keyboard.addListener(hideEvent, () => setKeyboardOpen(false));
+    if (Platform.OS !== 'ios') {
+      return;
+    }
+    const show = Keyboard.addListener('keyboardWillShow', (e) => {
+      Animated.timing(bottomSpace, {
+        toValue: e.endCoordinates.height + spacing.sm,
+        duration: e.duration ?? 250,
+        useNativeDriver: false,
+      }).start();
+    });
+    const hide = Keyboard.addListener('keyboardWillHide', (e) => {
+      Animated.timing(bottomSpace, {
+        toValue: TAB_BAR_CLEARANCE,
+        duration: e.duration ?? 250,
+        useNativeDriver: false,
+      }).start();
+    });
     return () => {
       show.remove();
       hide.remove();
     };
-  }, []);
+  }, [bottomSpace]);
 
   // Inverted list renders newest first, so streaming tokens stay in view.
   const reversed = useMemo(() => [...messages].reverse(), [messages]);
@@ -171,10 +187,7 @@ function ChatContent() {
         </View>
       </View>
 
-      <KeyboardAvoidingView
-        style={styles.flex}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      >
+      <View style={styles.flex}>
         {messages.length === 0 ? (
           <EmptyChat onSuggest={(text) => useChatStore.getState().send(text, [])} />
         ) : (
@@ -197,7 +210,7 @@ function ChatContent() {
           />
         )}
 
-        <View style={[styles.composerWrap, !keyboardOpen && { marginBottom: TAB_BAR_CLEARANCE }]}>
+        <Animated.View style={[styles.composerWrap, { marginBottom: bottomSpace }]}>
           {editingId && (
             <View style={styles.editBanner}>
               <Icon name="edit" color={colors.warning} size={14} />
@@ -274,8 +287,8 @@ function ChatContent() {
               </Pressable>
             )}
           </View>
-        </View>
-      </KeyboardAvoidingView>
+        </Animated.View>
+      </View>
     </Screen>
   );
 }
