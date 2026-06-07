@@ -11,6 +11,7 @@ import { OfflineBanner } from '../components/OfflineBanner';
 import { SplashScreen } from '../components/SplashScreen';
 import { LoginScreen } from '../features/auth/LoginScreen';
 import { RegisterScreen } from '../features/auth/RegisterScreen';
+import { useMoneyBackupSync } from '../money/backupSync';
 import { useMoneyStore } from '../money/moneyStore';
 import { useConnectivity } from '../offline/useConnectivity';
 import { useAuthStore } from '../store/authStore';
@@ -45,6 +46,8 @@ export function RootNavigator() {
 
   // Reflect connectivity into React Query + the network store (Portfolio needs it).
   useConnectivity();
+  // Snapshot-backup the local Money state whenever signed in + online.
+  useMoneyBackupSync();
 
   useEffect(() => {
     hydrateAuth();

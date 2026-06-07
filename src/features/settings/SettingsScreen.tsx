@@ -3,6 +3,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { DefaultRangeMode } from '../../api/settingsStorage';
+import { useBackupStore } from '../../money/backupSync';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
 import { Icon } from '../../components/Icon';
@@ -96,6 +97,22 @@ type Nav = NativeStackNavigationProp<RootStackParamList>;
 
 /** Auth is optional. Guests get a sign-in CTA; signed-in users see their name
  * and a sign-out button. Signing out never touches local Money data. */
+function BackupStatusLine() {
+  const status = useBackupStore((s) => s.status);
+  const lastBackupAt = useBackupStore((s) => s.lastBackupAt);
+
+  const text =
+    status === 'syncing'
+      ? 'Backing up money data…'
+      : status === 'error'
+        ? 'Money backup failed — retries when online.'
+        : lastBackupAt
+          ? `Money backed up ${new Date(lastBackupAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+          : 'Money backs up automatically when online.';
+
+  return <Text style={styles.hint}>{text}</Text>;
+}
+
 function AccountSection() {
   const navigation = useNavigation<Nav>();
   const status = useAuthStore((s) => s.status);
@@ -121,6 +138,7 @@ function AccountSection() {
           <View style={styles.rowText}>
             <Text style={styles.label}>{username ?? 'Signed in'}</Text>
             <Text style={styles.hint}>Portfolios sync and the AI assistant are unlocked.</Text>
+            <BackupStatusLine />
           </View>
         </View>
         <View style={styles.signOutWrap}>

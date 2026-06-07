@@ -133,6 +133,27 @@ describe('moneyStore CRUD', () => {
     expect(useMoneyStore.getState().accounts.find((a) => a.id === 'acc-1')?.type).toBe('ewallet');
   });
 
+  test('replaceAll swaps the whole state and stays hydrated', () => {
+    useMoneyStore.getState().addTransaction(addPayload());
+    const incoming = {
+      accounts: [
+        { id: 'x1', name: 'Restored', type: 'bank' as const, currency: 'IDR', institution: null },
+      ],
+      categories: [],
+      transactions: [],
+      schemaVersion: 1,
+      seeded: true,
+      imported: false,
+    };
+
+    useMoneyStore.getState().replaceAll(incoming);
+
+    const state = useMoneyStore.getState();
+    expect(state.accounts.map((a) => a.name)).toEqual(['Restored']);
+    expect(state.transactions).toHaveLength(0);
+    expect(state.hydrated).toBe(true);
+  });
+
   test('addAccount and addCategory return the created record with an id', () => {
     const acc = useMoneyStore
       .getState()
