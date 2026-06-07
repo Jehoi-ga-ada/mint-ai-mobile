@@ -110,6 +110,17 @@ export function useAssets() {
   });
 }
 
+export function useCreateAsset() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (symbol: string): Promise<Asset> =>
+      (await api.post<Asset>('/assets', { symbol })).data,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.assets });
+    },
+  });
+}
+
 export function useAssetPrice(assetId: string | null) {
   return useQuery({
     queryKey: queryKeys.assetPrice(assetId ?? ''),

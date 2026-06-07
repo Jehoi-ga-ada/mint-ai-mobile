@@ -7,6 +7,7 @@ import { gramsToTroyOz, parseDecimalInput, toNumber } from '../../api/format';
 import {
   useAssetPrice,
   useAssets,
+  useCreateAsset,
   useCreateInvestmentTransaction,
   useDeleteInvestmentTransaction,
   useUpdateInvestmentTransaction,
@@ -32,6 +33,7 @@ export function AddInvestmentScreen({
   const { portfolioId } = route.params;
   const editing = route.params.transaction;
   const assets = useAssets();
+  const createAsset = useCreateAsset();
   const createTxn = useCreateInvestmentTransaction();
   const updateTxn = useUpdateInvestmentTransaction();
   const deleteTxn = useDeleteInvestmentTransaction();
@@ -195,6 +197,8 @@ export function AddInvestmentScreen({
           options={investable.map((a) => ({ value: a.id, label: `${a.symbol} · ${a.name}` }))}
           value={assetId}
           onChange={onSelectAsset}
+          createLabel="Add token by symbol"
+          onCreate={async (symbol) => (await createAsset.mutateAsync(symbol)).id}
         />
         <Picker
           label="Type"
