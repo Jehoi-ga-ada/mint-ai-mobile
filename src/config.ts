@@ -2,18 +2,19 @@ import { Platform } from 'react-native';
 
 /**
  * Backend base URL.
- * - Android emulators reach the host machine via 10.0.2.2.
- * - iOS uses the Mac's mDNS hostname so physical devices on the same Wi-Fi
- *   reach the backend too (the simulator reaches it as well — it's this
- *   machine), and it survives DHCP reassigning the Mac's IP. `.local` hosts
- *   are exempt from ATS, so plain HTTP needs no Info.plist exception.
- * - Swap DEV_LAN_HOST for the deployed backend URL when the server goes live.
+ * - Release builds talk to the deployed backend over HTTPS.
+ * - Debug builds use the dev machine: Android emulators reach it via 10.0.2.2;
+ *   iOS uses the Mac's mDNS hostname so the simulator and physical devices on
+ *   the same Wi-Fi both work, surviving DHCP reassignment. `.local` hosts are
+ *   ATS-exempt, so plain HTTP needs no Info.plist exception.
  */
+const PROD_BASE_URL = 'https://mintai.eastasia.cloudapp.azure.com/api/v1';
+
 const DEV_LAN_HOST = 'Jehoiadas-MacBook-Pro-2.local'; // `scutil --get LocalHostName` + .local
+const DEV_HOST = Platform.select({ android: '10.0.2.2', default: DEV_LAN_HOST });
+const DEV_BASE_URL = `http://${DEV_HOST}:8080/api/v1`;
 
-const HOST = Platform.select({ android: '10.0.2.2', default: DEV_LAN_HOST });
-
-export const API_BASE_URL = `http://${HOST}:8080/api/v1`;
+export const API_BASE_URL = __DEV__ ? DEV_BASE_URL : PROD_BASE_URL;
 
 export const SUPPORTED_CURRENCIES = ['IDR', 'USD'] as const;
 export type Currency = (typeof SUPPORTED_CURRENCIES)[number];
