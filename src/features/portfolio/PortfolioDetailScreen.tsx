@@ -135,7 +135,6 @@ function AllocationCard({ segments, hidden, totalValue }: AllocationCardProps) {
         segments={segments}
         centerValue={hidden ? '••••' : totalValue}
         centerLabel="Value"
-        formatValue={(value) => (hidden ? '••••' : formatMoney(value, USD))}
         selectedKey={selectedKey}
         onSelect={toggle}
       />

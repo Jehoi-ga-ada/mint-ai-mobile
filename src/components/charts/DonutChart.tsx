@@ -19,12 +19,9 @@ interface DonutChartProps {
   centerLabel?: string;
   /** Tint for the center value (e.g. red for expense, green for income). */
   centerValueColor?: string;
-  /** Formats a slice's value for the tap-to-inspect center readout. */
-  formatValue?: (value: number) => string;
   /** Controlled selection (pair with useSliceSelection so the legend stays in
-   * sync). Providing both makes slices tappable: the center swaps to the
-   * selected slice's value and share — the full name lives in the legend row,
-   * so nothing ever truncates inside the hole. */
+   * sync). Providing onSelect makes slices tappable: the center swaps to the
+   * selected slice's name and share of the total. */
   selectedKey?: string | null;
   onSelect?: (key: string | null) => void;
 }
@@ -36,7 +33,6 @@ export function DonutChart({
   centerValue,
   centerLabel,
   centerValueColor,
-  formatValue,
   selectedKey,
   onSelect,
 }: DonutChartProps) {
@@ -49,7 +45,7 @@ export function DonutChart({
     SLICE_SEPARATOR,
   );
 
-  const selectable = formatValue != null && onSelect != null;
+  const selectable = onSelect != null;
   const selected = selectable ? (segments.find((s) => s.key === selectedKey) ?? null) : null;
 
   const handlePress = (event: GestureResponderEvent) => {
@@ -109,14 +105,14 @@ export function DonutChart({
       )}
       {(centerValue || centerLabel || selected) && (
         <View style={styles.center} pointerEvents="none">
-          {selected && formatValue != null ? (
+          {selected ? (
             <>
               <Text
                 style={[styles.centerValue, { color: selected.color }]}
-                numberOfLines={1}
+                numberOfLines={2}
                 adjustsFontSizeToFit
               >
-                {formatValue(selected.value)}
+                {selected.label}
               </Text>
               <Text style={styles.centerLabel}>{selected.pct.toFixed(1)}% of total</Text>
             </>
@@ -143,6 +139,6 @@ export function DonutChart({
 const styles = StyleSheet.create({
   wrapper: { alignItems: 'center', justifyContent: 'center', alignSelf: 'center' },
   center: { position: 'absolute', alignItems: 'center', maxWidth: '66%' },
-  centerValue: { ...typography.heading, color: colors.text },
+  centerValue: { ...typography.heading, color: colors.text, textAlign: 'center' },
   centerLabel: { ...typography.caption, color: colors.textMuted },
 });

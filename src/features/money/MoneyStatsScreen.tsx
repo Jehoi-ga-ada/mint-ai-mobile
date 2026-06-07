@@ -96,7 +96,6 @@ function StatsBody({ type, stats }: StatsBodyProps) {
             centerValue={formatMoney(stats.total, IDR)}
             centerLabel={type === 'income' ? 'Income' : 'Spent'}
             centerValueColor={type === 'income' ? colors.positive : colors.negative}
-            formatValue={(value) => formatMoney(value, IDR)}
             selectedKey={selectedKey}
             onSelect={toggle}
           />
