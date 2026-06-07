@@ -8,6 +8,12 @@ export function toNumber(value: Numeric | null | undefined): number {
   return Number.isFinite(n) ? n : 0;
 }
 
+/** Parse a user-typed decimal. Locale keyboards (e.g. Indonesian) emit a comma
+ * separator, which Number() rejects — accept both. NaN when not a number. */
+export function parseDecimalInput(text: string): number {
+  return Number(text.trim().replace(',', '.'));
+}
+
 const DECIMALS: Record<string, number> = { IDR: 0, USD: 2 };
 
 export function formatMoney(value: Numeric | null | undefined, currency: string): string {

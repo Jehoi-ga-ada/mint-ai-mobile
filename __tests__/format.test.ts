@@ -3,8 +3,23 @@ import {
   formatPct,
   formatQuantity,
   gramsToTroyOz,
+  parseDecimalInput,
   toNumber,
 } from '../src/api/format';
+
+describe('parseDecimalInput', () => {
+  it('parses dot decimals', () => {
+    expect(parseDecimalInput('0.0042')).toBe(0.0042);
+  });
+  it('parses comma decimals from locale keyboards', () => {
+    expect(parseDecimalInput('0,0042')).toBe(0.0042);
+  });
+  it('trims whitespace and rejects garbage as NaN', () => {
+    expect(parseDecimalInput(' 12.5 ')).toBe(12.5);
+    expect(Number.isNaN(parseDecimalInput('abc'))).toBe(true);
+    expect(Number.isNaN(parseDecimalInput(''))).toBe(false);
+  });
+});
 
 describe('toNumber', () => {
   it('passes through numbers', () => {

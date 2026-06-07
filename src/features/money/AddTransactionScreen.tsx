@@ -3,7 +3,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Alert, StyleSheet, Text } from 'react-native';
 
 import { getErrorMessage } from '../../api/client';
-import { toNumber } from '../../api/format';
+import { parseDecimalInput, toNumber } from '../../api/format';
 import {
   useAccounts,
   useCategories,
@@ -126,7 +126,7 @@ export function AddTransactionScreen({
 
   const submit = () => {
     setError(null);
-    const value = Number(amount);
+    const value = parseDecimalInput(amount);
     if (!accountId || !categoryId) {
       setError('Pick an account and a category');
       return;

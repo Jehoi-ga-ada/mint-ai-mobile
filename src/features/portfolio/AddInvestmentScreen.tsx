@@ -3,7 +3,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Alert, StyleSheet, Text } from 'react-native';
 
 import { getErrorMessage } from '../../api/client';
-import { gramsToTroyOz, toNumber } from '../../api/format';
+import { gramsToTroyOz, parseDecimalInput, toNumber } from '../../api/format';
 import {
   useAssetPrice,
   useAssets,
@@ -113,7 +113,7 @@ export function AddInvestmentScreen({
 
   const onGramsChange = (text: string) => {
     setGrams(text);
-    const g = Number(text);
+    const g = parseDecimalInput(text);
     if (Number.isFinite(g) && g > 0) {
       setQuantity(gramsToTroyOz(g).toFixed(6));
     }
@@ -121,8 +121,8 @@ export function AddInvestmentScreen({
 
   const submit = () => {
     setError(null);
-    const qty = Number(quantity);
-    const unitPrice = Number(price);
+    const qty = parseDecimalInput(quantity);
+    const unitPrice = parseDecimalInput(price);
     if (!assetId) {
       setError('Pick an asset');
       return;
@@ -140,7 +140,7 @@ export function AddInvestmentScreen({
       type,
       quantity: qty,
       price_per_unit: unitPrice,
-      fee: Number(fee) || 0,
+      fee: parseDecimalInput(fee) || 0,
       currency: USD,
       portfolio_id: portfolioId,
       asset_id: assetId,
