@@ -32,7 +32,8 @@ export function RegisterScreen({ navigation }: RootStackScreenProps<'Register'>)
         const { username, password } = getValues();
         login.mutate(
           { username, password },
-          { onSuccess: () => navigation.navigate('Tabs') },
+          // Dismiss the auth modal (see LoginScreen — navigate would stack).
+          { onSuccess: () => navigation.goBack() },
         );
       },
       onError: (e) => setError(getErrorMessage(e)),

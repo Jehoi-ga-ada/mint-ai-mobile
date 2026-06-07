@@ -26,7 +26,9 @@ export function LoginScreen({ navigation }: RootStackScreenProps<'Login'>) {
     setError(null);
     login.mutate(values, {
       // Dismiss the auth modal back to the tabs; the gated feature reveals itself.
-      onSuccess: () => navigation.navigate('Tabs'),
+      // Dismiss the auth modal — navigate('Tabs') would push a second Tabs
+      // copy on top (react-navigation v7 navigate no longer goes back).
+      onSuccess: () => navigation.goBack(),
       onError: (e) => setError(getErrorMessage(e)),
     });
   });

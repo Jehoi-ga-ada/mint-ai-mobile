@@ -188,27 +188,31 @@ function ChatContent() {
       </View>
 
       <View style={styles.flex}>
-        {messages.length === 0 ? (
-          <EmptyChat onSuggest={(text) => useChatStore.getState().send(text, [])} />
-        ) : (
-          <FlatList
-            data={reversed}
-            inverted
-            keyExtractor={(m) => m.id}
-            renderItem={({ item }) => (
-              <ChatBubble
-                message={item}
-                onEdit={isStreaming ? undefined : handleEdit}
-                onUndoFrom={isStreaming ? undefined : handleUndoFrom}
-                onRetry={isStreaming ? undefined : () => useChatStore.getState().regenerate()}
-              />
-            )}
-            keyboardDismissMode="interactive"
-            keyboardShouldPersistTaps="handled"
-            contentContainerStyle={styles.listContent}
-            showsVerticalScrollIndicator={false}
-          />
-        )}
+        {/* Tap anywhere in the conversation area to put the keyboard away —
+            bubbles consume their own taps, everything else falls through. */}
+        <Pressable style={styles.flex} onPress={Keyboard.dismiss} accessible={false}>
+          {messages.length === 0 ? (
+            <EmptyChat onSuggest={(text) => useChatStore.getState().send(text, [])} />
+          ) : (
+            <FlatList
+              data={reversed}
+              inverted
+              keyExtractor={(m) => m.id}
+              renderItem={({ item }) => (
+                <ChatBubble
+                  message={item}
+                  onEdit={isStreaming ? undefined : handleEdit}
+                  onUndoFrom={isStreaming ? undefined : handleUndoFrom}
+                  onRetry={isStreaming ? undefined : () => useChatStore.getState().regenerate()}
+                />
+              )}
+              keyboardDismissMode="on-drag"
+              keyboardShouldPersistTaps="handled"
+              contentContainerStyle={styles.listContent}
+              showsVerticalScrollIndicator={false}
+            />
+          )}
+        </Pressable>
 
         <Animated.View style={[styles.composerWrap, { marginBottom: bottomSpace }]}>
           {editingId && (
