@@ -31,8 +31,8 @@ interface DonutChartProps {
 
 export function DonutChart({
   segments,
-  size = 180,
-  strokeWidth = 26,
+  size = 224,
+  strokeWidth = 28,
   centerValue,
   centerLabel,
   centerValueColor,
@@ -111,7 +111,11 @@ export function DonutChart({
         <View style={styles.center} pointerEvents="none">
           {selected && formatValue != null ? (
             <>
-              <Text style={[styles.centerValue, { color: selected.color }]}>
+              <Text
+                style={[styles.centerValue, { color: selected.color }]}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+              >
                 {formatValue(selected.value)}
               </Text>
               <Text style={styles.centerLabel}>{selected.pct.toFixed(1)}% of total</Text>
@@ -121,6 +125,8 @@ export function DonutChart({
               {!!centerValue && (
                 <Text
                   style={[styles.centerValue, centerValueColor ? { color: centerValueColor } : null]}
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
                 >
                   {centerValue}
                 </Text>
@@ -136,7 +142,7 @@ export function DonutChart({
 
 const styles = StyleSheet.create({
   wrapper: { alignItems: 'center', justifyContent: 'center', alignSelf: 'center' },
-  center: { position: 'absolute', alignItems: 'center', maxWidth: '64%' },
+  center: { position: 'absolute', alignItems: 'center', maxWidth: '66%' },
   centerValue: { ...typography.heading, color: colors.text },
   centerLabel: { ...typography.caption, color: colors.textMuted },
 });
