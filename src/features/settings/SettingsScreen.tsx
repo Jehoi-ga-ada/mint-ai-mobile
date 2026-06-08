@@ -2,6 +2,7 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { useDeleteMyAccount } from '../../api/hooks';
 import type { DefaultRangeMode } from '../../api/settingsStorage';
 import { useBackupStore } from '../../money/backupSync';
 import { Button } from '../../components/Button';
@@ -118,12 +119,35 @@ function AccountSection() {
   const status = useAuthStore((s) => s.status);
   const username = useAuthStore((s) => s.username);
   const signOut = useAuthStore((s) => s.signOut);
+  const deleteAccount = useDeleteMyAccount();
 
   const confirmSignOut = () => {
     Alert.alert('Sign out', 'Signing out keeps all your money data on this device.', [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Sign out', style: 'destructive', onPress: () => signOut() },
     ]);
+  };
+
+  const confirmDeleteAccount = () => {
+    Alert.alert(
+      'Delete account?',
+      'This permanently deletes your account and your portfolios from the server. ' +
+        'Your Money data stays on this device. This cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete account',
+          style: 'destructive',
+          onPress: () => {
+            deleteAccount.mutate(undefined, {
+              onSuccess: () => signOut(),
+              onError: () =>
+                Alert.alert('Could not delete', 'Please try again when you have a connection.'),
+            });
+          },
+        },
+      ],
+    );
   };
 
   if (status === 'authed') {
@@ -143,6 +167,17 @@ function AccountSection() {
         </View>
         <View style={styles.signOutWrap}>
           <Button title="Sign out" variant="secondary" onPress={confirmSignOut} />
+          <Pressable
+            onPress={confirmDeleteAccount}
+            disabled={deleteAccount.isPending}
+            style={styles.deleteAccount}
+            accessibilityRole="button"
+            accessibilityLabel="Delete account"
+          >
+            <Text style={styles.deleteAccountText}>
+              {deleteAccount.isPending ? 'Deleting…' : 'Delete account'}
+            </Text>
+          </Pressable>
         </View>
       </Card>
     );
@@ -180,7 +215,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   avatarText: { ...typography.heading, color: colors.primary },
-  signOutWrap: { paddingHorizontal: spacing.lg, paddingBottom: spacing.lg },
+  signOutWrap: { paddingHorizontal: spacing.lg, paddingBottom: spacing.lg, gap: spacing.md },
+  deleteAccount: { alignItems: 'center', paddingVertical: spacing.sm },
+  deleteAccountText: { ...typography.body, color: colors.negative },
   dayGrid: { flexDirection: 'row', flexWrap: 'wrap', marginTop: spacing.sm },
   dayCell: { width: `${100 / 7}%`, paddingVertical: spacing.xs, alignItems: 'center' },
   dayInner: {

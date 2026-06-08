@@ -338,3 +338,13 @@ export function useDeleteAccount() {
     },
   });
 }
+
+/** Permanently delete the signed-in user's server account (Apple requires this
+ * in-app). Local Money data is the user's own and is left on the device. */
+export function useDeleteMyAccount() {
+  return useMutation({
+    mutationFn: async () => {
+      await api.delete('/auth/me');
+    },
+  });
+}
