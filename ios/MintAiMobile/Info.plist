@@ -36,7 +36,9 @@
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 	<key>NSLocalNetworkUsageDescription</key>
-	<string>Mint connects to your finance backend on your local network during development.</string>
+	<string>Mint connects to your finance backend on your local network.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Mint needs access to your photo library so you can attach images to your conversations with the AI assistant.</string>
 	<key>RCTNewArchEnabled</key>
 	<true/>
 	<key>UILaunchStoryboardName</key>

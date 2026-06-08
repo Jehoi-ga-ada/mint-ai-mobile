@@ -1,8 +1,9 @@
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useDeleteMyAccount } from '../../api/hooks';
+import { PRIVACY_POLICY_URL } from '../../config';
 import type { DefaultRangeMode } from '../../api/settingsStorage';
 import { useBackupStore } from '../../money/backupSync';
 import { Button } from '../../components/Button';
@@ -90,11 +91,43 @@ export function SettingsScreen() {
           </View>
         </Card>
       )}
+
+      <Text style={styles.sectionTitle}>Legal</Text>
+      <LegalSection />
     </Screen>
   );
 }
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
+
+/** Privacy policy link — required by App Store Connect and surfaced in-app so
+ * users can review how their data is handled. */
+function LegalSection() {
+  const openPrivacyPolicy = async () => {
+    try {
+      await Linking.openURL(PRIVACY_POLICY_URL);
+    } catch {
+      Alert.alert('Could not open', 'The privacy policy could not be opened right now.');
+    }
+  };
+
+  return (
+    <Card style={styles.card}>
+      <Pressable
+        onPress={openPrivacyPolicy}
+        accessibilityRole="link"
+        accessibilityLabel="Privacy policy"
+        style={styles.row}
+      >
+        <View style={styles.rowText}>
+          <Text style={styles.label}>Privacy policy</Text>
+          <Text style={styles.hint}>How Mint handles your data</Text>
+        </View>
+        <Icon name="chevronRight" color={colors.border} size={20} />
+      </Pressable>
+    </Card>
+  );
+}
 
 /** Auth is optional. Guests get a sign-in CTA; signed-in users see their name
  * and a sign-out button. Signing out never touches local Money data. */

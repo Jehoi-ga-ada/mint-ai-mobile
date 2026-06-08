@@ -16,5 +16,12 @@ const DEV_BASE_URL = `http://${DEV_HOST}:8080/api/v1`;
 
 export const API_BASE_URL = __DEV__ ? DEV_BASE_URL : PROD_BASE_URL;
 
+/**
+ * Public privacy policy, shown from Settings and required by App Store Connect.
+ * This page must be live and reachable; keep it in sync with the URL you enter
+ * in App Store Connect → App Privacy.
+ */
+export const PRIVACY_POLICY_URL = 'https://mintai.eastasia.cloudapp.azure.com/privacy';
+
 export const SUPPORTED_CURRENCIES = ['IDR', 'USD'] as const;
 export type Currency = (typeof SUPPORTED_CURRENCIES)[number];
